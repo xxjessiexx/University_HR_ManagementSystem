@@ -1,51 +1,52 @@
-# University HR Management System (CSEN501) - Team 28
+# University HR Management System
 
-This repository is a starter template for Milestone 1 and Milestone 2 of the **University HR Management System** project
-for Databases I (Winter 2025) at the German University in Cairo.
-
-**Course**: Databases I, Winter 2025  
-**Instructor**: Dr. Mervat Abuelkheir  
-**Department**: Media Engineering and Technology (MET)
+A comprehensive **Human Resources (HR) Management System** designed for our university to streamline employee management, payroll, leave approvals, and performance monitoring.
 
 ---
 
-## Contents
-- `SQL_Scripts/` — All SQL scripts: table creation, stored procedures, functions, views.
-- `Documentation/` — Project descriptions, EERD instructions, and uploaded milestone PDFs.
-- `TestCases/` — SQL scripts for inserting test data and running validation tests.
-- `README.md` — This file.
+## Table of Contents
+- [Project Overview](#project-overview)
+- [Features](#features)
+- [Folder Structure](#folder-structure)
+- [Installation](#installation)
+- [Usage](#usage)
+- [Contributing](#contributing)
+- [License](#license)
 
 ---
 
-## Milestone 1 (Due: 9-Oct-2025)
-Milestone 1 requires:
-1. An **EERD diagram** drawn using a graph editor (yEd or draw.io). Handwritten diagrams or screenshots are NOT accepted.
-2. A **PDF** of the relational schema (translated from the EERD).
-3. An **Excel** file containing team details (team name, leader, members, application numbers, tutorial groups).
-4. Submit a single zip named `Team_28.zip` via CMS. Print an A3 copy for the TA.
+## Project Overview
+The goal of this project is to **design and develop a Human Resources (HR) Management System** for the university. The system covers all aspects of employee management, including:
 
-**Files & placeholders for Milestone 1**:
-- `Documentation/EERD_instructions.md` — instructions + placeholder for exported diagram.
-- `Documentation/Schema_Relational.md` — a template to paste your relational schema (or export as PDF).
-- `Documentation/Team_Info.xlsx` — placeholder Excel for team details (edit with real data).
+- Personal information and profiles  
+- Employment contracts and job roles  
+- Attendance tracking and logs  
+- Payroll records, including deductions and benefits  
+- Performance evaluations and reviews  
+- Leave requests and approval workflows  
 
----
+By centralizing HR data, the system provides **HR administrators, employees, and department managers** with quick access to accurate information for better decision-making.
 
-## Milestone 2 (Due: 24-Nov-2025)
-Milestone 2 requires implementing the SQL database (stored procedures, functions, views) as described in the project spec.
-A Milestone 2 PDF has been added to `Documentation/` (if available).
+### Key Features
+- **Employee Management:** Detailed employee profiles, departmental structure, and roles.  
+- **Hierarchical Structure:** Supports positions like Teaching Assistant (TA), Lecturer, Vice-Dean, Dean, Vice-President, President, and Medical Doctor.  
+- **HR Administration:** Departmental HR representatives and HR managers for approvals and workflows.  
+- **Payroll & Leave Automation:** Ensures consistent payroll processing, automated leave approvals, and performance monitoring.  
+- **Document Management:** Stores official employment, payroll, and performance-related documents.  
+- **Workflow Efficiency:** Streamlined access and automated workflows for HR operations.  
 
----
-
-## How to use this repo
-1. Fill in `Documentation/EERD_instructions.md` and create your EERD in draw.io or yEd. Export as PDF and place it in `Documentation/` (filename: `Milestone1_EERD.pdf`).
-2. Translate the EERD to a relational schema, paste into `Documentation/Schema_Relational.md` and export as `Milestone1_Schema.pdf`.
-3. Update `Documentation/Team_Info.xlsx` with team members and save.
-4. Implement SQL scripts in `SQL_Scripts/`. Use the provided placeholder files as templates.
-5. Run test scripts inside `TestCases/` to validate.
+Overall, the system ensures **data consistency, transparency, and efficiency**, simplifying HR operations across the university.
 
 ---
 
-## Notes
-- Replace `Team_28` with your actual team number everywhere before submission.
-- Deadlines are strict. Make sure only one team member submits the zip through CMS.
+## Features
+- Centralized HR database  
+- Employee attendance and leave tracking  
+- Payroll processing with deductions and benefits  
+- Performance evaluation tracking  
+- Role-based access for administrators, HR, and employees  
+- Automated leave approval workflows  
+
+---
+
+## Folder Structure

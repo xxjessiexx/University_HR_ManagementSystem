@@ -252,6 +252,8 @@ go;
 
 EXEC clearAllTables;
 
+-- this is a demo script
 
+select * from department;
  
 

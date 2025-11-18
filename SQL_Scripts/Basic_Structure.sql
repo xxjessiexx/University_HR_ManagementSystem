@@ -254,6 +254,21 @@ EXEC clearAllTables;
 
 
  
+ CREATE PROCEDURE  Intitiate_Attendance 
+AS 
+DECLARE @currentday DATE = CURRENT_TIMESTAMP;
+INSERT INTO Attendance (date, check_in_time, check_out_time, total_duration, status, emp_ID)
+SELECT @currentday, NULL, NULL, NULL, 'Absent', employee_ID
+FROM Employee
+WHERE employee_ID NOT IN (
+    SELECT emp_ID 
+    FROM Attendance 
+    WHERE date = @currentday
+);
+
+go
+
+EXEC Intitiate_Attendance ;
 
  --faridaaaaaa
 

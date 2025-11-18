@@ -47,6 +47,4 @@ Overall, the system ensures **data consistency, transparency, and efficiency**, 
 - Role-based access for administrators, HR, and employees  
 - Automated leave approval workflows  
 
----
 
-## Folder Structure

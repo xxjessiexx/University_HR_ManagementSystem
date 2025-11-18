@@ -254,4 +254,145 @@ EXEC clearAllTables;
 
 
  
+ CREATE PROCEDURE  Intitiate_Attendance 
+AS 
+DECLARE @currentday DATE = CURRENT_TIMESTAMP;
+INSERT INTO Attendance (date, check_in_time, check_out_time, total_duration, status, emp_ID)
+SELECT @currentday, NULL, NULL, NULL, 'Absent', employee_ID
+FROM Employee
+WHERE employee_ID NOT IN (
+    SELECT emp_ID 
+    FROM Attendance 
+    WHERE date = @currentday
+);
 
+go
+
+EXEC Intitiate_Attendance ;
+
+
+
+go
+
+CREATE PROCEDURE Update_Attendance
+    @EmpID INT,
+    @CheckIn TIME,
+    @CheckOut TIME
+AS
+BEGIN
+
+
+    DECLARE @currentday DATE = CURRENT_TIMESTAMP;
+    DECLARE @Status VARCHAR(10);
+    DECLARE @TDuration TIME;
+
+    
+    IF @CheckIn IS NOT NULL AND @CheckOut IS NOT NULL
+        SET @TDuration = @CheckOut - @CheckIn;
+    ELSE
+        SET @TDuration = NULL;
+
+    
+    IF @CheckIn IS NOT NULL AND @CheckOut IS NOT NULL
+        SET @Status = 'Attended';
+    ELSE
+        SET @Status = 'Absent';
+
+    
+    UPDATE Attendance
+    SET 
+        check_in_time = @CheckIn,
+        check_out_time = @CheckOut,
+        total_duration = @TDuration,
+        status = @Status
+    WHERE emp_ID = @EmpID AND date = @currentday;
+END;
+go
+EXEC Update_Attendance;
+
+go
+  
+CREATE PROCEDURE Remove_Holiday
+AS
+BEGIN
+    DELETE Attend
+    FROM Attendance Attend
+    INNER JOIN Holiday H
+    ON Attend.date >= H.from_date 
+   AND Attend.date <= H.to_date;
+END;
+go
+EXEC Remove_Holiday;
+go 
+
+CREATE PROCEDURE Remove_DayOff
+    @employee_id INT
+AS
+BEGIN
+    
+
+    DECLARE @dayoff VARCHAR(50);
+    DECLARE @dayoff_num INT;
+
+    DECLARE @curr_m INT = MONTH(CURRENT_TIMESTAMP);
+    DECLARE @curr_y INT = YEAR(CURRENT_TIMESTAMP);
+
+   
+    SELECT @dayoff = official_day_off
+    FROM Employee
+    WHERE employee_ID = @employee_id;
+
+   
+    IF @dayoff = 'Sunday'
+        SET @dayoff_num = 1;
+    ELSE IF @dayoff = 'Monday'
+        SET @dayoff_num = 2;
+    ELSE IF @dayoff = 'Tuesday'
+        SET @dayoff_num = 3;
+    ELSE IF @dayoff = 'Wednesday'
+        SET @dayoff_num = 4;
+    ELSE IF @dayoff = 'Thursday'
+        SET @dayoff_num = 5;
+    ELSE IF @dayoff = 'Friday'
+        SET @dayoff_num = 6;
+    ELSE IF @dayoff = 'Saturday'
+        SET @dayoff_num = 7;
+
+    
+    DELETE FROM Attendance
+    WHERE emp_ID = @employee_id
+      AND status = 'Absent'
+      AND DATEPART(WEEKDAY, date) = @dayoff_num
+      AND MONTH(date) = @curr_month
+      AND YEAR(date) = @curr_year;
+END;
+go
+EXEC Remove_DayOff;
+go
+CREATE PROCEDURE Remove_Approved_Leaves
+    @employee_id INT
+AS
+BEGIN
+    
+
+    DELETE A
+    FROM Attendance A
+     INNER JOIN Leave L 
+        ON A.date >= L.start_date AND A.date <= L.end_date
+    WHERE A.emp_ID = @employee_id
+      AND L.final_approval_status = 'approved'
+      AND L.request_ID IN (
+            SELECT request_ID FROM Annual_Leave WHERE emp_ID = @employee_id
+            UNION
+            SELECT request_ID FROM Accidental_Leave WHERE emp_ID = @employee_id
+            UNION
+            SELECT request_ID FROM Medical_Leave WHERE emp_ID = @employee_id
+            UNION
+            SELECT request_ID FROM Unpaid_Leave WHERE emp_ID = @employee_id
+            UNION
+            SELECT request_ID FROM Compensation_Leave WHERE emp_ID = @employee_id
+      );
+END;
+go
+EXEC Remove_Approved_Leaves;
+go

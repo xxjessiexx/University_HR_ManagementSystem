@@ -255,3 +255,224 @@ EXEC clearAllTables;
 
  
 
+ --faridaaaaaa
+
+ --2.5)o)
+GO
+CREATE PROC  Dean_andHR_Evaluation
+@employee_ID int,
+@rating int,
+@comment varchar(50),
+@semester char(3)
+AS
+
+INSERT INTO Performance
+VALUES (@rating, @comment, @semester, @employee_ID);
+
+GO; 
+
+--2.5)n)
+GO
+CREATE PROC  Submit_compensation
+@employee_ID int, 
+@compensation_date date, 
+@reason varchar(50), 
+@date_of_original_workday date, 
+@replacement_emp int
+AS
+DECLARE @HRrep_id int;
+DECLARE @req_id int;
+DECLARE @employee_departement VARCHAR (50);
+
+INSERT INTO Leave (date_of_request, start_date, end_date)
+VALUES(CURRENT_TIMESTAMP, @compensation_date, @compensation_date);
+
+--how to get the req_id of the leave?
+
+INSERT INTO Compensation_Leave
+VALUES (@req_id, @reason, @date_of_original_workday, @employee_ID, @replacement_emp);
+
+INSERT INTO Employee_Replace_Employee
+VALUES (@employee_ID, @replacement_emp, @compensation_date,@compensation_date);
+
+SELECT @employee_departement = E.dept_name
+FROM Employee E
+WHERE E.employee_ID = @employee_ID;
+
+SELECT TOP 1 @HRrep_id = E.employee_ID 
+FROM Employee E INNER JOIN Employee_Role R ON (E.employee_ID= R.emp_ID)
+WHERE R.role_name = ('HR_Representative_'+ @employee_departement) AND E.employment_status='active';
+
+INSERT INTO Employee_Approve_Leave (Emp1_ID , Leave_ID , status)
+VALUES (@HRrep_id , @req_id, 'pending');
+
+GO;
+
+--2.5)k)
+GO
+CREATE PROC Submit_medical
+@employee_ID int, 
+@start_date date, 
+@end_date date, 
+@type varchar(50), 
+@insurance_status bit, 
+@disability_details varchar(50),
+@document_description varchar(50), 
+@file_name varchar(50)
+AS 
+
+DECLARE @req_id int;
+DECLARE @HRrep_id INT;
+DECLARE @employee_dep VARCHAR(50);
+DECLARE @medical_dr_id INT;
+
+INSERT INTO Leave (date_of_request, start_date, end_date)
+VALUES (CURRENT_TIMESTAMP, @start_date, @end_date);
+
+INSERT INTO Medical_Leave (request_ID, insurance_status, disability_details, type, Emp_ID)
+VALUES (@req_id, @insurance_status, @disability_details, @type, @employee_ID);
+
+INSERT INTO Document (type, description, file_name , creation_date, expiry_date, status, emp_ID,medical_ID, unpaid_ID)
+VALUES ('medical report', @document_description, @file_name, CURRENT_TIMESTAMP, NULL,'valid',@employee_ID, @req_id, NULL);
+
+SELECT TOP 1 @medical_dr_id = E.employee_ID
+FROM Employee E INNER JOIN Employee_Role R ON (E.employee_ID = R.emp_ID)
+WHERE E.employment_status = 'active'AND R.role_name= 'Medical Doctor'; 
+
+SELECT @employee_dep = E.dept_name
+FROM Employee E
+WHERE E.employee_ID = @employee_ID;
+
+SELECT TOP 1 @HRrep_id = E.employee_ID 
+FROM Employee E INNER JOIN Employee_Role R ON (E.employee_ID= R.emp_ID)
+WHERE R.role_name = ('HR_Representative_'+ @employee_dep) AND E.employment_status='active';
+
+INSERT INTO Employee_Approve_Leave (Emp1_ID , Leave_ID , status)
+VALUES (@HRrep_id , @req_id, 'pending');
+
+INSERT INTO Employee_Approve_Leave (Emp1_ID , Leave_ID , status)
+VALUES (@medical_dr_id , @req_id, 'pending');
+
+GO;
+
+--2.5)L)
+GO
+CREATE PROC Submit_unpaid
+@employee_ID int, 
+@start_date date, 
+@end_date date,
+@document_description varchar(50), 
+@file_name varchar(50)
+AS
+
+DECLARE @employee_dep VARCHAR(50);
+DECLARE @HRrep_id INT;
+DECLARE @req_id int;
+DECLARE @president_id int;
+DECLARE @employee_role VARCHAR(50);
+DECLARE @HR_manager_id int;
+DECLARE @higher_rank_emp_id int ;
+DECLARE @emp_rank int ;
+
+INSERT INTO Leave (date_of_request, start_date, end_date)
+VALUES (CURRENT_TIMESTAMP, @start_date, @end_date);
+
+INSERT INTO Unpaid_Leave (request_ID, Emp_ID) 
+VALUES (@req_id, @employee_ID);
+
+INSERT INTO Document (type, description, file_name, creation_date, expiry_date, status, emp_ID, medical_id,unpaid_id)
+VALUES ('memo', @document_description, @file_name, CURRENT_TIMESTAMP, NULL, 'valid', @employee_ID, null, @req_id);
+
+--Employee_Role (emp_ID int (FK), role_name varchar(50) (FK))
+
+SELECT @employee_dep = E.dept_name 
+FROM Employee E 
+WHERE E.employee_ID = @employee_ID;
+
+SELECT @employee_role = R.role_name
+FROM Employee_Role R
+WHERE R.emp_ID = @employee_ID ;
+
+SELECT @president_id = R.emp_ID
+FROM Employee_Role R
+WHERE R.role_name = 'President';
+
+
+IF @employee_role in ('Dean', 'Vice Dean')
+BEGIN 
+	SELECT TOP 1 @HRrep_id = E.employee_ID 
+	FROM Employee E INNER JOIN Employee_Role R ON (E.employee_ID= R.emp_ID)
+	WHERE R.role_name = ('HR_Representative_'+ @employee_dep) AND E.employment_status='active';
+
+	INSERT INTO Employee_Approve_Leave (Emp1_ID , Leave_ID , status)
+	VALUES (@HRrep_id , @req_id, 'pending');
+
+	INSERT INTO Employee_Approve_Leave (Emp1_ID , Leave_ID , status)
+	VALUES (@president_id , @req_id, 'pending');
+END 
+ELSE IF @employee_dep LIKE 'HR'
+BEGIN 
+	SELECT TOP 1 @HR_manager_id = E.employee_ID
+	FROM Employee E INNER JOIN Employee_Role R ON (E.employee_ID = R.emp_ID)
+	WHERE E.employment_status = 'active' AND R.role_name = 'HR Manager';
+
+	INSERT INTO Employee_Approve_Leave (Emp1_ID , Leave_ID , status)
+	VALUES (@HR_manager_id, @req_id, 'pending');
+
+	INSERT INTO Employee_Approve_Leave (Emp1_ID , Leave_ID , status)
+	VALUES (@president_id , @req_id, 'pending');
+END 
+ELSE 
+BEGIN 
+	SELECT TOP 1 @HRrep_id = E.employee_ID 
+	FROM Employee E INNER JOIN Employee_Role R ON (E.employee_ID= R.emp_ID)
+	WHERE R.role_name = ('HR_Representative_'+ @employee_dep) AND E.employment_status='active';
+
+	INSERT INTO Employee_Approve_Leave (Emp1_ID , Leave_ID , status)
+	VALUES (@HRrep_id , @req_id, 'pending');   --HR representative 
+
+	INSERT INTO Employee_Approve_Leave (Emp1_ID , Leave_ID , status)
+	VALUES (@president_id, @req_id, 'pending');   --upper board departement 
+	
+	SELECT @emp_rank = R.rank 
+	FROM Employee E inner join Employee_Role ER ON (E.employee_ID = ER.emp_ID)INNER JOIN Role R ON (ER.role_name = R.role_name)
+	WHERE  E.employee_id = @employee_ID ;
+
+	SELECT TOP 1 @higher_rank_emp_id = E.employee_ID
+	FROM  Employee E INNER JOIN Employee_Role ER ON (E.employee_ID = ER.emp_ID)INNER JOIN Role R ON (ER.role_name = R.role_name)
+	WHERE E.employment_status = 'active' AND R.rank < @emp_rank ;
+
+	INSERT INTO Employee_Approve_Leave (Emp1_ID , Leave_ID , status)
+	VALUES (@higher_rank_emp_id, @req_id, 'pending');  --Higher ranking employee 
+END
+
+GO;
+
+
+--2.5)m)
+
+GO
+CREATE PROC Upperboard_approve_unpaids
+@request_ID int, 
+@Upperboard_ID int
+AS
+--Employee_Approve_Leave (Emp1_ID int (FK), Leave_ID int (FK), status: varchar(50))
+--Employee_ Approve _Employee. Emp1_ID references Employee. Employee_ID
+--Employee_ Approve _Employee. Leave_ID references Leave.request_ID
+
+UPDATE Employee_Approve_Leave 
+SET status = 'approved'
+WHERE status <> 'rejected' AND Leave_ID = @request_ID AND Emp1_ID = @Upperboard_ID 
+AND EXISTS (
+SELECT *
+FROM Document D
+WHERE D.unpaid_ID = @request_ID AND D.type = 'memo' AND D.status = 'valid')
+AND EXISTS (
+SELECT *
+FROM Unpaid_Leave UL
+WHERE UL.request_ID = @request_ID);
+
+GO;
+
+
+

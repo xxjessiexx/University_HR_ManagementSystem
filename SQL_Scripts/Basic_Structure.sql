@@ -323,7 +323,7 @@ AS
     TRUNCATE TABLE Employee_Phone;
     TRUNCATE TABLE Employee;
     TRUNCATE TABLE Department;
-GO;
+GO
 
 
 GO
@@ -826,7 +826,7 @@ AS
         RETURN;
     INSERT INTO Employee_Replace_Employee (Emp1_ID, Emp2_ID, from_date, to_date)
     VALUES (@Emp1_ID, @Emp2_ID, @from_date, @to_date);
-GO;
+GO
 
 --2.4(b)---
 GO
@@ -1000,7 +1000,7 @@ END
             WHERE employee_ID = @emp_ID;
         END
     END
-GO;
+GO
 
 --2.4(c)---
 GO
@@ -1090,7 +1090,7 @@ AS
     UPDATE Leave
     SET final_approval_status = @status
     WHERE request_ID = @request_ID;
-GO;
+GO
 
 --2.4(d)--
 GO
@@ -1270,7 +1270,7 @@ AS
     UPDATE Leave
     SET final_approval_status = @status
     WHERE request_ID = @request_ID;
-GO;
+GO
 
 ---2.4(e)---
 GO
@@ -1347,10 +1347,9 @@ AS
 
     INSERT INTO Deduction (emp_ID, [date], amount, type, unpaid_ID, attendance_ID)
     VALUES (@employee_ID, @first_missing_date, @amount, 'missing_hours', NULL, @first_attendance_id);
-end
 
 
- GO;
+ GO
 
  --2.5 f
 

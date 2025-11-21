@@ -1,0 +1,17 @@
+# Ignore Visual Studio temp files
+.vs/
+
+# Ignore build outputs
+bin/
+obj/
+
+# Ignore SQL Server local DBs
+*.mdf
+*.ldf
+
+# Ignore user settings
+*.user
+*.suo
+
+# Ignore cache folders
+*.cache/

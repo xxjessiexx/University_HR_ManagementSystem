@@ -1540,7 +1540,7 @@ GO
 
 
 --- Yasmin Was HERE--
---2.2)D) yasmin
+--2.2)D) yasmin  DONE
 GO
 
 CREATE VIEW allRejectedMedicals
@@ -1549,7 +1549,7 @@ SELECT *
 FROM Medical_Leave ML INNER JOIN Leave L ON ML.request_ID = L.request_ID
 WHERE L.final_approval_status = 'rejected';
 
---2.2)e) yasmin
+--2.2)e) yasmin DONE
 
 GO
 
@@ -1560,7 +1560,7 @@ FROM Attendance --- am i allowed to use this? how else would i check the date is
 WHERE status = 'attended' AND date = Cast (DATEADD (day,-1,GETDATE()) as date) ;
 GO
 
---2.4)a) yasmin
+--2.4)a) yasmin DONE
 
 CREATE FUNCTION HRLoginValidation
 (@employee_ID int , @password varchar(50))
@@ -1582,34 +1582,7 @@ return @success
 end
 go
 
-
---2.4)f) yasmin Add deduction due to missing days 
-      --WORKING ON IT IK IT'S WRONG GIVE ME A MIN 
-
---CREATE PROC Deduction_days
-  --  @employee_id INT
-    --as
-    --BEGIN
---    declare @deduct as int
-
--- SELECT @deduct = COUNT(*)
-  --  FROM Employee E INNER JOIN Attendance A
-      --  ON E.employee_ID = A.emp_ID
-  --  WHERE E.employee_ID = @employee_id
-  --    AND A.check_in_time IS NULL
-    --  AND A.check_out_time IS NULL;
-  
-
---  INSERT INTO Deduction (emp_ID, date, amount, type,  unpaid_ID, attendance_ID)
-  --  select 
-
-
-    --END;
-
--- 2.4)g) yasmin Add deduction due to unpaid leave.
-
---2.4)I) yasmin
--- helper function to calculate salary
+-- helper function to calculate salary DONE
 go
 
 CREATE FUNCTION Calc_Salary (@employee_ID int)
@@ -1639,6 +1612,47 @@ SELECT TOP 1
       return @salary
 end
 go
+--2.4)f) yasmin Add deduction due to missing days DONE
+     
+
+  CREATE PROC Deduction_days
+  @employee_id INT
+    as
+    BEGIN
+   declare @salary as  decimal (10,2)
+   declare @ded_per_day as decimal (10,2)
+   set @salary  = dbo.Calc_Salary (@employee_ID )
+   set @ded_per_day = @salary /22.0 -- rate per day
+
+   Insert INTO Deduction (emp_ID, date, amount, type,  unpaid_ID, attendance_ID) 
+    SELECT A.emp_ID, A.date, @ded_per_day , 'missing_days', NULL, A.attendance_ID
+    FROM Attendance A 
+    WHERE A.emp_ID = @employee_ID
+    AND A.check_in_time IS NULL
+    AND A.check_out_time IS NULL;
+
+    END
+    go
+-- 2.4)g) yasmin Add deduction due to unpaid leave.
+-- WORKING ON IT GIVE ME A MIN
+CREATE PROCEDURE Deduction_unpaid
+    @employee_ID INT
+AS
+BEGIN
+ declare @salary as  decimal (10,2)
+   declare @ded_per_day as decimal (10,2)
+   set @salary  = dbo.Calc_Salary (@employee_ID )
+   set @ded_per_day = @salary /22.0 -- rate per day
+
+  -- INSERT INTO Deduction (emp_ID, date, amount, type,  unpaid_ID, attendance_ID)
+
+
+END 
+GO
+
+
+--2.4)I) yasmin DONE
+
 
 
 

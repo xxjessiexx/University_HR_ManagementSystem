@@ -489,7 +489,7 @@ WHERE UL.request_ID = @request_ID);
 
 go 
 
-
+--2.3 a
 CREATE PROCEDURE Update_Status_Doc 
 AS 
 
@@ -504,7 +504,7 @@ EXEC Update_Status_Doc ;
 
 go
 
-
+--2.3 b
 CREATE PROCEDURE Remove_Deductions 
 AS 
 
@@ -522,7 +522,7 @@ where emp_ID IN (
 
 go
 
-
+--2.3 c
  CREATE PROCEDURE  Update_Employment_Status 
  
   @Employee_ID int 
@@ -541,7 +541,7 @@ EXEC  Update_Employment_Status ;
 
 go
 
-
+--2.3 d
 CREATE PROCEDURE Create_Holiday 
 AS
 
@@ -558,7 +558,7 @@ EXEC Create_Holiday ;
 
 go
 
-
+--2.3 e
 CREATE PROCEDURE Add_Holiday 
 
  @holiday_name varchar(50),

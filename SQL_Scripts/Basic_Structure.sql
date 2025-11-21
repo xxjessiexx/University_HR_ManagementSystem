@@ -1314,7 +1314,7 @@ AS
     -- 3) Sum total missing minutes for this month----
     SELECT 
         @totalMissingMinutes = SUM(
-            CasE 
+            Case 
                 WHEN status = 'attended'
                      AND DATEDIFF(MINUTE, check_in_time, check_out_time) < 480
                 THEN 480 - DATEDIFF(MINUTE, check_in_time, check_out_time)
@@ -1347,13 +1347,53 @@ AS
 
     INSERT INTO Deduction (emp_ID, [date], amount, type, unpaid_ID, attendance_ID)
     VALUES (@employee_ID, @first_missing_date, @amount, 'missing_hours', NULL, @first_attendance_id);
-GO;
-
-    end
+end
 
 
+ GO;
+
+ --2.5 f
+
+ CREATE FUNCTION  Is_On_Leave
+ (@employee_ID int, @from date, @to date )
+ Returns bit 
+AS
+ Begin
+ declare @Y bit =0;
+
+if EXISTS(
+
+ select Leave.start_date,Leave.end_date,Leave.request_ID -- start and end ??
+
+ from Leave left outer join Annual_Leave on (Leave.request_ID = Annual_Leave.request_ID)
+left outer join Accidental_Leave on (Annual_Leave.request_ID = Accidental_Leave.request_ID)
+left outer join Medical_Leave on ( Accidental_Leave.request_ID=Medical_Leave.request_ID)
+left outer join Unpaid_Leave on (Medical_Leave.request_ID=Unpaid_Leave.request_ID)
+left outer join Compensation_Leave on (Unpaid_Leave.request_ID=Compensation_Leave.request_ID)
+
+where (   
+            @employee_ID=Annual_Leave.emp_ID
+            or
+            @employee_ID=Accidental_Leave.emp_ID
+            or
+            @employee_ID=Compensation_Leave.emp_ID
+            or
+            @employee_ID=Medical_Leave.Emp_ID
+            or
+            @employee_ID=Unpaid_Leave.Emp_ID
+            )
+    AND Leave.start_date <= @to       
+          AND Leave.end_date >= @from
+    )
+
+ Set @Y= 1
+
+ 
+Return @Y
+end
 --2.4(h)--
 GO
+
 CREATE FUNCTION Bonus_amount
 (
     @employee_ID INT
@@ -1543,9 +1583,103 @@ return @success
 end
 go
 
- END;
+
+--2.4)f) yasmin Add deduction due to missing days 
+      --WORKING ON IT IK IT'S WRONG GIVE ME A MIN 
+
+--CREATE PROC Deduction_days
+  --  @employee_id INT
+    --as
+    --BEGIN
+--    declare @deduct as int
+
+-- SELECT @deduct = COUNT(*)
+  --  FROM Employee E INNER JOIN Attendance A
+      --  ON E.employee_ID = A.emp_ID
+  --  WHERE E.employee_ID = @employee_id
+  --    AND A.check_in_time IS NULL
+    --  AND A.check_out_time IS NULL;
+  
+
+--  INSERT INTO Deduction (emp_ID, date, amount, type,  unpaid_ID, attendance_ID)
+  --  select 
+
+
+    --END;
+
+-- 2.4)g) yasmin Add deduction due to unpaid leave.
+
+--2.4)I) yasmin
+-- helper function to calculate salary
+go
+
+CREATE FUNCTION Calc_Salary (@employee_ID int)
+returns decimal (10,2)
+AS
+begin
+DECLARE @salary decimal (10,2) = 0.0;
+DECLARE @base_salary decimal (10,2)
+DECLARE @perc_YOE DECIMAL(5,2);
+DECLARE @YOE INT;
+
+SELECT TOP 1
+        @base_salary = R.base_salary,
+        @perc_YOE    = R.percentage_YOE
+    FROM Employee_Role ER
+    JOIN Role R ON ER.role_name = R.role_name
+    WHERE ER.emp_ID = @employee_ID
+    ORDER BY R.rank DESC;       
+
+    SELECT @YOE = years_of_experience
+    FROM Employee
+    WHERE employee_ID = @employee_ID;
+
+    IF @base_salary IS NULL
+
+    SET @salary =@base_salary + (@perc_YOE / 100.0) * @YOE * @base_salary;
+      return @salary
+end
+go
+
+
+
+CREATE PROC Add_Payroll 
+@employee_ID int,
+@from date, 
+@to date
+as
+DECLARE @Bonus decimal (10,2)
+DECLARE @totalDeductions decimal (10,2)
+DECLARE @final_salary_amount decimal (10,1)
+
+set @Bonus = dbo.Bonus_amount (@employee_ID)
+
+set @totalDeductions = (SELECT SUM (amount) FROM Deduction 
+WHERE emp_ID = @employee_ID AND date BETWEEN @from AND @to and status = 'pending' )
+
+set @final_salary_amount =  dbo.Calc_Salary (@employee_ID ) + @Bonus - @totalDeductions
 
 GO
+INSERT INTO
+Payroll ( payment_date, final_salary_amount, from_date,
+to_date,  bonus_amount, deductions_amount, emp_ID ) --how am i supposed to add comments??
+
+VALUES ( GETDATE(), @final_salary_amount,@from,
+@to,  @Bonus, @totalDeductions, @employee_ID)
+
+UPDATE Deduction
+SET status = 'finalized'
+WHERE emp_ID = @employee_ID AND date BETWEEN @from AND @to and status = 'pending'
+
+go
+--2.5)G) yasmin Apply for an annual leave   
+
+
+---2.5)I) yasmin As a Dean/Vice-dean/President I can approve/reject annual
+--leaves
+
+--2.5)J) yasmin Apply for an accidental leave.
+
 
 --2.5 h
 
@@ -1575,5 +1709,282 @@ AND @employee_ID =Accidental_Leave.emp_ID
  )
 
  go
+ -- yasmeen added this part for testing
+ go
+ --2.3 F
+ CREATE PROC Intitiate_Attendance 
+AS 
+DECLARE @currentday DATE = CURRENT_TIMESTAMP;
+INSERT INTO Attendance (date, check_in_time, check_out_time, total_duration, status, emp_ID)
+SELECT @currentday, NULL, NULL, NULL, 'Absent', employee_ID
+FROM Employee
+WHERE employee_ID NOT IN (
+    SELECT emp_ID 
+    FROM Attendance 
+    WHERE date = @currentday
+);
 
+go
+
+EXEC Intitiate_Attendance ;
+
+
+
+go
+--2.3 g
+CREATE PROC Update_Attendance
+    @EmpID INT,
+    @CheckIn TIME,
+    @CheckOut TIME
+AS
+BEGIN
+
+
+    DECLARE @currentday DATE = CURRENT_TIMESTAMP;
+    DECLARE @Status VARCHAR(10);
+    DECLARE @TDuration TIME;
+
+    
+    IF @CheckIn IS NOT NULL AND @CheckOut IS NOT NULL
+        SET @TDuration = @CheckOut - @CheckIn;
+    ELSE
+        SET @TDuration = NULL;
+
+    
+    IF @CheckIn IS NOT NULL AND @CheckOut IS NOT NULL
+        SET @Status = 'Attended';
+    ELSE
+        SET @Status = 'Absent';
+
+    
+    UPDATE Attendance
+    SET 
+        check_in_time = @CheckIn,
+        check_out_time = @CheckOut,
+        total_duration = @TDuration,
+        status = @Status
+    WHERE emp_ID = @EmpID AND date = @currentday;
+END;
+go
+EXEC Update_Attendance;
+
+
+go
+
+
+
+
+--2.3 g
+go
+
+CREATE PROC Update_Attendance
+    @EmpID INT,
+    @CheckIn TIME,
+    @CheckOut TIME
+AS
+BEGIN
+
+
+    DECLARE @currentday DATE = CURRENT_TIMESTAMP;
+    DECLARE @Status VARCHAR(10);
+    DECLARE @TDuration TIME;
+
+    
+    IF @CheckIn IS NOT NULL AND @CheckOut IS NOT NULL
+        SET @TDuration = @CheckOut - @CheckIn;
+    ELSE
+        SET @TDuration = NULL;
+
+    
+    IF @CheckIn IS NOT NULL AND @CheckOut IS NOT NULL
+        SET @Status = 'Attended';
+    ELSE
+        SET @Status = 'Absent';
+
+    
+    UPDATE Attendance
+    SET 
+        check_in_time = @CheckIn,
+        check_out_time = @CheckOut,
+        total_duration = @TDuration,
+        status = @Status
+    WHERE emp_ID = @EmpID AND date = @currentday;
+END;
+go
+EXEC Update_Attendance;
+
+go
+  --2.3 h
+CREATE PROC Remove_Holiday
+AS
+BEGIN
+    DELETE Attend
+    FROM Attendance Attend
+    INNER JOIN Holiday H
+    ON Attend.date >= H.from_date 
+   AND Attend.date <= H.to_date;
+END;
+go
+EXEC Remove_Holiday;
+go 
+
+go 
+--2.3 i
+CREATE PROC Remove_DayOff
+    @employee_id INT
+AS
+BEGIN
+    
+
+    DECLARE @dayoff VARCHAR(50);
+    DECLARE @dayoff_num INT;
+
+    DECLARE @curr_m INT = MONTH(CURRENT_TIMESTAMP);
+    DECLARE @curr_y INT = YEAR(CURRENT_TIMESTAMP);
+
+   
+    SELECT @dayoff = official_day_off
+    FROM Employee
+    WHERE employee_ID = @employee_id;
+
+   
+    IF @dayoff = 'Sunday'
+        SET @dayoff_num = 1;
+    ELSE IF @dayoff = 'Monday'
+        SET @dayoff_num = 2;
+    ELSE IF @dayoff = 'Tuesday'
+        SET @dayoff_num = 3;
+    ELSE IF @dayoff = 'Wednesday'
+        SET @dayoff_num = 4;
+    ELSE IF @dayoff = 'Thursday'
+        SET @dayoff_num = 5;
+    ELSE IF @dayoff = 'Friday'
+        SET @dayoff_num = 6;
+    ELSE IF @dayoff = 'Saturday'
+        SET @dayoff_num = 7;
+
+    
+    DELETE FROM Attendance
+    WHERE emp_ID = @employee_id
+      AND status = 'Absent'
+      AND DATEPART(WEEKDAY, date) = @dayoff_num
+      AND MONTH(date) = @curr_month
+      AND YEAR(date) = @curr_year;
+END;
+go
+EXEC Remove_DayOff;
+go
+--2.3 j
+CREATE PROCEDURE Remove_Approved_Leaves
+    @employee_id INT
+AS
+BEGIN
+    
+
+    DELETE A
+    FROM Attendance A
+     INNER JOIN Leave L 
+        ON A.date >= L.start_date AND A.date <= L.end_date
+    WHERE A.emp_ID = @employee_id
+      AND L.final_approval_status = 'approved'
+      AND L.request_ID IN (
+            SELECT request_ID FROM Annual_Leave WHERE emp_ID = @employee_id
+            UNION
+            SELECT request_ID FROM Accidental_Leave WHERE emp_ID = @employee_id
+            UNION
+            SELECT request_ID FROM Medical_Leave WHERE emp_ID = @employee_id
+            UNION
+            SELECT request_ID FROM Unpaid_Leave WHERE emp_ID = @employee_id
+            UNION
+            SELECT request_ID FROM Compensation_Leave WHERE emp_ID = @employee_id
+      );
+END;
+go
+EXEC Remove_Approved_Leaves;
+go
+--2.5 b
+CREATE FUNCTION MyPerformance
+(
+    @employee_ID INT,
+    @semester CHAR(3)
+)
+RETURNS TABLE
+AS
+RETURN
+(
+    SELECT performance_ID, rating, comments, semester, emp_ID
+    FROM Performance
+    WHERE emp_ID = @employee_ID
+      AND semester = @semester
+);
+GO
+--2.5 c
+CREATE FUNCTION MyAttendance
+(
+    @employee_ID INT
+)
+RETURNS TABLE
+AS
+RETURN
+(
+    SELECT 
+        Att.attendance_ID,
+        Att.date,
+        Att.check_in_time,
+        Att.check_out_time,
+        Att.total_duration,
+        Att.status,
+        Att.emp_ID
+    FROM Attendance Att
+    INNER JOIN Employee E
+        ON Att.emp_ID = E.employee_ID
+    WHERE 
+        Att.emp_ID = @employee_ID
+        AND MONTH(Att.date) = MONTH(CURRENT_TIMESTAMP)
+        AND YEAR(Att.date)  = YEAR(CURRENT_TIMESTAMP)
+        AND NOT 
+        (
+            Att.status = 'Absent'
+            AND DATEPART(WEEKDAY, Att.date) =
+                CASE E.official_day_off
+                    WHEN 'Sunday' THEN 1
+                    WHEN 'Monday' THEN 2
+                    WHEN 'Tuesday' THEN 3
+                    WHEN 'Wednesday' THEN 4
+                    WHEN 'Thursday' THEN 5
+                    WHEN 'Friday' THEN 6
+                    WHEN 'Saturday' THEN 7
+                END
+        )
+);
+GO
+--2.5 d
+CREATE FUNCTION Last_month_payroll
+(
+    @employee_ID INT
+)
+RETURNS TABLE
+AS
+RETURN
+(
+    SELECT 
+        ID, payment_date, final_salary_amount,
+        from_date, to_date, comments, 
+        bonus_amount, deductions_amount, emp_ID
+    FROM Payroll
+    WHERE emp_ID = @employee_ID
+      AND MONTH(to_date) = 
+            CASE 
+                WHEN MONTH(CURRENT_TIMESTAMP) = 1 
+                     THEN 12
+                ELSE MONTH(CURRENT_TIMESTAMP) - 1
+            END
+      AND YEAR(to_date) =
+            CASE 
+                WHEN MONTH(CURRENT_TIMESTAMP) = 1
+                     THEN YEAR(CURRENT_TIMESTAMP) - 1
+                ELSE YEAR(CURRENT_TIMESTAMP)
+            END
+);
+GO
  

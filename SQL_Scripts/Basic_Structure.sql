@@ -1191,22 +1191,95 @@ BEGIN
     INSERT INTO Deduction (emp_ID, date, amount, type,  unpaid_ID, attendance_ID)
     VALUES (@employee_ID, @first_missing_date, @amount, 'missing_hours', NULL, @first_attendance_id);
 
+    end
 
+go
 
+--2.5 e
+CREATE FUNCTION Deductions_Attendance
+ (@employee_ID INT ,@month INT )
+ RETURNS TABLE
+ AS
+ RETURN 
+(
+ SELECT D.emp_ID,D.date,D.amount,D.type,D.status,D.unpaid_ID,D.attendance_ID
+FROM Deduction as D
+ WHERE Deduction.emp_ID=@employee_ID AND month (D.date)=@month AND 
+ D.type in ('missing_hours', 'missing_days')
+ )
 
+ GO;
 
+ --2.5 f
 
+ CREATE FUNCTION  Is_On_Leave
+ (@employee_ID int, @from date, @to date )
+ Returns bit 
+AS
+ Begin
+ declare @Y bit =0;
 
-	
+if EXISTS(
 
+ select Leave.start_date,Leave.end_date,Leave.request_ID -- start and end ??
 
+ from Leave left outer join Annual_Leave on (Leave.request_ID = Annual_Leave.request_ID)
+left outer join Accidental_Leave on (Annual_Leave.request_ID = Accidental_Leave.request_ID)
+left outer join Medical_Leave on ( Accidental_Leave.request_ID=Medical_Leave.request_ID)
+left outer join Unpaid_Leave on (Medical_Leave.request_ID=Unpaid_Leave.request_ID)
+left outer join Compensation_Leave on (Unpaid_Leave.request_ID=Compensation_Leave.request_ID)
 
+where (   
+            @employee_ID=Annual_Leave.emp_ID
+            or
+            @employee_ID=Accidental_Leave.emp_ID
+            or
+            @employee_ID=Compensation_Leave.emp_ID
+            or
+            @employee_ID=Medical_Leave.Emp_ID
+            or
+            @employee_ID=Unpaid_Leave.Emp_ID
+            )
+    AND Leave.start_date <= @to       
+          AND Leave.end_date >= @from
+    )
+
+ Set @Y= 1
 
  
+Return @Y
+
+ END;
+
+GO
+
+--2.5 h
+
+CREATE FUNCTION Status_leaves
+ (@employee_ID INT)
+ RETURNS TABLE
+ AS
+ RETURN 
+(
+ SELECT Leave.request_ID, Leave.date_of_request, Leave.final_approval_status
+
+FROM leave inner join Annual_Leave on (Leave.request_ID=Annual_Leave.request_ID)
+
+where month(date_of_request)=month (CURRENT_TIMESTAMP)  
+AND @employee_ID =Annual_Leave.emp_ID 
+
+UNION 
+
+SELECT Leave.request_ID, Leave.date_of_request, Leave.final_approval_status
+
+FROM leave inner join Accidental_Leave on (Leave.request_ID=Accidental_Leave.request_ID)
+
+where month(date_of_request)=month (CURRENT_TIMESTAMP)  
+AND @employee_ID =Accidental_Leave.emp_ID 
+
+
+ )
+
+ go
+
  
-
-
- 
-
-
-

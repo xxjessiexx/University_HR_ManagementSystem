@@ -6,7 +6,7 @@ USE University_HR_ManagementSystem_28;
 
 GO
 
-CREATE PROCEDURE createAllTables
+CREATE PROC createAllTables
 AS 
 
 CREATE TABLE Department (
@@ -76,7 +76,7 @@ date_of_request date,
 start_date date, 
 end_date date, 
 final_approval_status varchar (50) DEFAULT 'pending',
-num_days AS end_date - start_date
+num_days AS end_date - start_date+1
 CHECK(final_approval_status in ('approved', 'rejected', 'pending') ));
 
 CREATE TABLE Annual_Leave (
@@ -210,7 +210,7 @@ go;
 EXEC createAllTables;
 
 GO
-CREATE PROCEDURE dropAllTables 
+CREATE PROC dropAllTables 
 AS 
 
 DROP TABLE Department, Employee, Employee_Phone, Role, Employee_Role, Role_existsIn_Department, Leave, Annual_Leave, Accidental_Leave, Medical_Leave, Unpaid_Leave, Compensation_Leave, Document, Payroll , Attendance, Deduction, Performance, Employee_Replace_Employee, Employee_Approve_Leave;
@@ -220,13 +220,13 @@ go;
 EXEC dropAllTables;
 
 go 
-CREATE PROCEDURE dropAllProceduresFunctionsViews 
+CREATE PROC dropAllProceduresFunctionsViews 
 AS 
 DROP PROCEDURE createAllTables ,dropAllTables,clearAllTables ;
 GO;
 
 go
-CREATE PROCEDURE clearAllTables 
+CREATE PROC clearAllTables 
 AS 
 
 Truncate table Department;
@@ -254,7 +254,7 @@ EXEC clearAllTables;
 
 go
  
- CREATE PROCEDURE  Intitiate_Attendance 
+ CREATE PROC  Intitiate_Attendance 
 AS 
 DECLARE @currentday DATE = CURRENT_TIMESTAMP;
 INSERT INTO Attendance (date, check_in_time, check_out_time, total_duration, status, emp_ID)
@@ -274,7 +274,7 @@ EXEC Intitiate_Attendance ;
 
 go
 
-CREATE PROCEDURE Update_Attendance
+CREATE PROC Update_Attendance
     @EmpID INT,
     @CheckIn TIME,
     @CheckOut TIME
@@ -312,7 +312,7 @@ EXEC Update_Attendance;
 
 go
   
-CREATE PROCEDURE Remove_Holiday
+CREATE PROC Remove_Holiday
 AS
 BEGIN
     DELETE Attend
@@ -325,7 +325,7 @@ go
 EXEC Remove_Holiday;
 go 
 
-CREATE PROCEDURE Remove_DayOff
+CREATE PROC Remove_DayOff
     @employee_id INT
 AS
 BEGIN
@@ -369,7 +369,7 @@ END;
 go
 EXEC Remove_DayOff;
 go
-CREATE PROCEDURE Remove_Approved_Leaves
+CREATE PROC Remove_Approved_Leaves
     @employee_id INT
 AS
 BEGIN
@@ -423,16 +423,18 @@ CREATE PROC  Submit_compensation
 @replacement_emp int
 AS
 DECLARE @HRrep_id int;
-DECLARE @req_id int;
 DECLARE @employee_departement VARCHAR (50);
+DECLARE @get_req_id int;
 
 INSERT INTO Leave (date_of_request, start_date, end_date)
 VALUES(CURRENT_TIMESTAMP, @compensation_date, @compensation_date);
 
 --how to get the req_id of the leave?
+SET @get_req_id= SCOPE_IDENTITY();
 
-INSERT INTO Compensation_Leave
-VALUES (@req_id, @reason, @date_of_original_workday, @employee_ID, @replacement_emp);
+
+INSERT INTO Compensation_Leave (request_ID, reason, date_of_original_workday, emp_ID, replacement_emp)
+VALUES (@get_req_id, @reason, @date_of_original_workday, @employee_ID, @replacement_emp);
 
 INSERT INTO Employee_Replace_Employee
 VALUES (@employee_ID, @replacement_emp, @compensation_date,@compensation_date);
@@ -446,7 +448,7 @@ FROM Employee E INNER JOIN Employee_Role R ON (E.employee_ID= R.emp_ID)
 WHERE R.role_name = ('HR_Representative_'+ @employee_departement) AND E.employment_status='active';
 
 INSERT INTO Employee_Approve_Leave (Emp1_ID , Leave_ID , status)
-VALUES (@HRrep_id , @req_id, 'pending');
+VALUES (@HRrep_id , @get_req_id, 'pending');
 
 GO;
 
@@ -463,7 +465,7 @@ CREATE PROC Submit_medical
 @file_name varchar(50)
 AS 
 
-DECLARE @req_id int;
+DECLARE @get_req_id int;
 DECLARE @HRrep_id INT;
 DECLARE @employee_dep VARCHAR(50);
 DECLARE @medical_dr_id INT;
@@ -471,11 +473,13 @@ DECLARE @medical_dr_id INT;
 INSERT INTO Leave (date_of_request, start_date, end_date)
 VALUES (CURRENT_TIMESTAMP, @start_date, @end_date);
 
+SET @get_req_id= SCOPE_IDENTITY();
+
 INSERT INTO Medical_Leave (request_ID, insurance_status, disability_details, type, Emp_ID)
-VALUES (@req_id, @insurance_status, @disability_details, @type, @employee_ID);
+VALUES (@get_req_id, @insurance_status, @disability_details, @type, @employee_ID);
 
 INSERT INTO Document (type, description, file_name , creation_date, expiry_date, status, emp_ID,medical_ID, unpaid_ID)
-VALUES ('medical report', @document_description, @file_name, CURRENT_TIMESTAMP, NULL,'valid',@employee_ID, @req_id, NULL);
+VALUES ('Medical', @document_description, @file_name, CURRENT_TIMESTAMP, NULL,'valid',@employee_ID, @get_req_id, NULL);
 
 SELECT TOP 1 @medical_dr_id = E.employee_ID
 FROM Employee E INNER JOIN Employee_Role R ON (E.employee_ID = R.emp_ID)
@@ -490,10 +494,10 @@ FROM Employee E INNER JOIN Employee_Role R ON (E.employee_ID= R.emp_ID)
 WHERE R.role_name = ('HR_Representative_'+ @employee_dep) AND E.employment_status='active';
 
 INSERT INTO Employee_Approve_Leave (Emp1_ID , Leave_ID , status)
-VALUES (@HRrep_id , @req_id, 'pending');
+VALUES (@HRrep_id , @get_req_id, 'pending');
 
 INSERT INTO Employee_Approve_Leave (Emp1_ID , Leave_ID , status)
-VALUES (@medical_dr_id , @req_id, 'pending');
+VALUES (@medical_dr_id , @get_req_id, 'pending');
 
 GO;
 
@@ -509,7 +513,7 @@ AS
 
 DECLARE @employee_dep VARCHAR(50);
 DECLARE @HRrep_id INT;
-DECLARE @req_id int;
+DECLARE @get_req_id int;
 DECLARE @president_id int;
 DECLARE @employee_role VARCHAR(50);
 DECLARE @HR_manager_id int;
@@ -519,11 +523,13 @@ DECLARE @emp_rank int ;
 INSERT INTO Leave (date_of_request, start_date, end_date)
 VALUES (CURRENT_TIMESTAMP, @start_date, @end_date);
 
+SET @get_req_id= SCOPE_IDENTITY();
+
 INSERT INTO Unpaid_Leave (request_ID, Emp_ID) 
-VALUES (@req_id, @employee_ID);
+VALUES (@get_req_id, @employee_ID);
 
 INSERT INTO Document (type, description, file_name, creation_date, expiry_date, status, emp_ID, medical_id,unpaid_id)
-VALUES ('memo', @document_description, @file_name, CURRENT_TIMESTAMP, NULL, 'valid', @employee_ID, null, @req_id);
+VALUES ('Memo', @document_description, @file_name, CURRENT_TIMESTAMP, NULL, 'valid', @employee_ID, null, @get_req_id);
 
 --Employee_Role (emp_ID int (FK), role_name varchar(50) (FK))
 
@@ -547,22 +553,22 @@ BEGIN
 	WHERE R.role_name = ('HR_Representative_'+ @employee_dep) AND E.employment_status='active';
 
 	INSERT INTO Employee_Approve_Leave (Emp1_ID , Leave_ID , status)
-	VALUES (@HRrep_id , @req_id, 'pending');
+	VALUES (@HRrep_id , @get_req_id, 'pending');
 
 	INSERT INTO Employee_Approve_Leave (Emp1_ID , Leave_ID , status)
-	VALUES (@president_id , @req_id, 'pending');
+	VALUES (@president_id , @get_req_id, 'pending');
 END 
-ELSE IF @employee_dep LIKE 'HR'
+ELSE IF @employee_dep LIKE 'HR%'
 BEGIN 
 	SELECT TOP 1 @HR_manager_id = E.employee_ID
 	FROM Employee E INNER JOIN Employee_Role R ON (E.employee_ID = R.emp_ID)
 	WHERE E.employment_status = 'active' AND R.role_name = 'HR Manager';
 
 	INSERT INTO Employee_Approve_Leave (Emp1_ID , Leave_ID , status)
-	VALUES (@HR_manager_id, @req_id, 'pending');
+	VALUES (@HR_manager_id, @get_req_id, 'pending');
 
 	INSERT INTO Employee_Approve_Leave (Emp1_ID , Leave_ID , status)
-	VALUES (@president_id , @req_id, 'pending');
+	VALUES (@president_id ,@get_req_id, 'pending');
 END 
 ELSE 
 BEGIN 
@@ -571,10 +577,9 @@ BEGIN
 	WHERE R.role_name = ('HR_Representative_'+ @employee_dep) AND E.employment_status='active';
 
 	INSERT INTO Employee_Approve_Leave (Emp1_ID , Leave_ID , status)
-	VALUES (@HRrep_id , @req_id, 'pending');   --HR representative 
+	VALUES (@HRrep_id , @get_req_id, 'pending');   --HR representative 
 
-	INSERT INTO Employee_Approve_Leave (Emp1_ID , Leave_ID , status)
-	VALUES (@president_id, @req_id, 'pending');   --upper board departement 
+    INSERT INTO Employee_Approve_Leave VALUES (@president_id, @get_req_id, 'pending'); --upperboard president
 	
 	SELECT @emp_rank = R.rank 
 	FROM Employee E inner join Employee_Role ER ON (E.employee_ID = ER.emp_ID)INNER JOIN Role R ON (ER.role_name = R.role_name)
@@ -582,10 +587,11 @@ BEGIN
 
 	SELECT TOP 1 @higher_rank_emp_id = E.employee_ID
 	FROM  Employee E INNER JOIN Employee_Role ER ON (E.employee_ID = ER.emp_ID)INNER JOIN Role R ON (ER.role_name = R.role_name)
-	WHERE E.employment_status = 'active' AND R.rank < @emp_rank ;
+	WHERE E.employment_status = 'active' AND R.rank < @emp_rank AND E.employee_ID <> @president_id AND E.employee_ID <> @HRrep_id
+    AND E.employee_ID <> @employee_ID;
 
 	INSERT INTO Employee_Approve_Leave (Emp1_ID , Leave_ID , status)
-	VALUES (@higher_rank_emp_id, @req_id, 'pending');  --Higher ranking employee 
+	VALUES (@higher_rank_emp_id, @get_req_id, 'pending');  --Higher ranking employee 
 END
 
 GO;
@@ -608,7 +614,7 @@ WHERE status <> 'rejected' AND Leave_ID = @request_ID AND Emp1_ID = @Upperboard_
 AND EXISTS (
 SELECT *
 FROM Document D
-WHERE D.unpaid_ID = @request_ID AND D.type = 'memo' AND D.status = 'valid')
+WHERE D.unpaid_ID = @request_ID AND D.type = 'Memo' AND D.status = 'valid')
 AND EXISTS (
 SELECT *
 FROM Unpaid_Leave UL
@@ -1190,9 +1196,44 @@ BEGIN
     SET @amount       = @rate_per_hour * @missingHours;     
     INSERT INTO Deduction (emp_ID, date, amount, type,  unpaid_ID, attendance_ID)
     VALUES (@employee_ID, @first_missing_date, @amount, 'missing_hours', NULL, @first_attendance_id);
+END
+GO
 
 
+--2.2)a)
+go
+CREATE VIEW allEmployeeProfiles
+AS 
 
+SELECT  employee_ID, first_name,last_name, gender, email, address, years_of_experience,
+official_day_off,type_of_contract,employment_status,
+annual_balance, accidental_balance
+FROM Employee ;
+
+go
+
+
+--2.2)b)
+
+go
+CREATE VIEW NoEmployeeDept
+AS 
+
+SELECT D.name, COUNT (E.employee_ID) AS employee_count
+FROM Department D LEFT OUTER JOIN Employee E ON (E.dept_name = D.name)
+GROUP BY D.name;
+
+go
+
+--2.2)c)
+go 
+CREATE VIEW allPerformance
+AS
+
+SELECT *
+FROM Performance 
+WHERE semester like 'W%';
+go
 
 
 

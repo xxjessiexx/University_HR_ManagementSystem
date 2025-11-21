@@ -610,7 +610,7 @@ AS
 
 UPDATE Employee_Approve_Leave 
 SET status = 'approved'
-WHERE status <> 'rejected' AND Leave_ID = @request_ID AND Emp1_ID = @Upperboard_ID 
+WHERE Leave_ID = @request_ID AND Emp1_ID = @Upperboard_ID 
 AND EXISTS (
 SELECT *
 FROM Document D

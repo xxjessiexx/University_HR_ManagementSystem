@@ -6,17 +6,16 @@ GO
 USE University_HR_ManagementSystem_28;
 
 GO
-
 CREATE PROC createAllTables
 as 
 
 CREATE TABLE Department (
 name varchar (50) PRIMARY KEY , 
-building_location varchar (50),
+building_location varchar (50)
 );
 
-create table Employee (
-employee_ID int PRIMARY KEY IDENTITY(1,1), 
+CREATE TABLE Employee (
+employee_ID int IDENTITY(1,1) PRIMARY KEY , 
 first_name varchar (50), 
 last_name varchar (50), 
 email varchar(50), 
@@ -32,9 +31,10 @@ emergency_contact_name varchar (50),
 emergency_contact_phone char (11), 
 annual_balance int, 
 accidental_balance int, 
-salary decimal(10,2), hire_date date, 
+salary decimal(10,2),
+hire_date date, 
 last_working_date date, 
-dept_name varchar (50)
+dept_name varchar (50),
 FOREIGN KEY (dept_name) REFERENCES Department(name),
 CHECK (employment_status in ('active', 'onleave', 'notice_period', 'resigned')),
 CHECK (type_of_contract in ('full_time', 'part_time'))
@@ -44,7 +44,8 @@ CREATE TABLE Employee_Phone (
 emp_ID int ,
 phone_num char (11),
 PRIMARY KEY (emp_ID,phone_num),
-FOREIGN KEY(emp_ID) REFERENCES Employee(employee_ID));
+FOREIGN KEY(emp_ID) REFERENCES Employee(employee_ID)
+);
 
 CREATE TABLE Role (
 role_name varchar (50) PRIMARY KEY , 
@@ -55,24 +56,27 @@ base_salary decimal (10,2),
 percentage_YOE decimal (4,2), 
 percentage_overtime decimal (4,2),
 annual_balance int, 
-accidental_balance int,
+accidental_balance int
 );
 
 CREATE TABLE Employee_Role (
 emp_ID int , 
-role_name varchar(50)
+role_name varchar(50),
 PRIMARY KEY(emp_ID, role_name),
 FOREIGN KEY(emp_ID) REFERENCES Employee(employee_ID),
-FOREIGN KEY(role_name) REFERENCES Role (role_name));
+FOREIGN KEY(role_name) REFERENCES Role (role_name)
+);
 
 CREATE TABLE Role_existsIn_Department (
-department_name VARCHAR(50), Role_name VARCHAR(50),
+department_name VARCHAR(50), 
+Role_name VARCHAR(50),
 PRIMARY KEY(department_name, Role_name),
 FOREIGN KEY (department_name) REFERENCES Department(name),
-FOREIGN KEY (Role_name) REFERENCES Role (role_name)) ;
+FOREIGN KEY (Role_name) REFERENCES Role (role_name)
+) ;
 
 CREATE TABLE Leave (
-request_ID int PRIMARY KEY IDENTITY(1,1), 
+request_ID int IDENTITY(1,1) PRIMARY KEY , 
 date_of_request date, 
 start_date date, 
 end_date date, 
@@ -124,11 +128,12 @@ emp_ID int ,
 replacement_emp int,
 FOREIGN KEY (request_ID) REFERENCES Leave(request_ID),
 FOREIGN KEY (emp_ID) REFERENCES Employee(employee_ID),
-FOREIGN KEY (replacement_emp) REFERENCES Employee(employee_id));
+FOREIGN KEY (replacement_emp) REFERENCES Employee(employee_ID)
+);
 
 
 CREATE TABLE  Document (
-document_ID int PRIMARY KEY IDENTITY(1,1), 
+document_ID int IDENTITY(1,1) PRIMARY KEY , 
 type varchar (50), 
 description varchar (50), 
 file_name varchar (50), 
@@ -141,10 +146,11 @@ unpaid_ID int,
 CHECK(status in ('valid', 'expired') ),
 FOREIGN KEY (emp_ID) REFERENCES Employee(employee_ID),
 FOREIGN KEY (medical_ID) REFERENCES Medical_Leave(request_ID),
-FOREIGN KEY (unpaid_ID) REFERENCES Unpaid_Leave(request_ID));
+FOREIGN KEY (unpaid_ID) REFERENCES Unpaid_Leave(request_ID)
+);
 
 CREATE TABLE Payroll (
-ID int PRIMARY KEY IDENTITY(1,1), 
+ID int IDENTITY(1,1) PRIMARY KEY , 
 payment_date date,
 final_salary_amount decimal (10,1), 
 from_date date, 
@@ -153,18 +159,21 @@ comments varchar (150),
 bonus_amount decimal (10,2),
 deductions_amount decimal (10,2), 
 emp_ID int, 
-FOREIGN KEY (emp_ID) REFERENCES Employee(employee_ID));
+FOREIGN KEY (emp_ID) REFERENCES Employee(employee_ID)
+);
 
 CREATE TABLE Attendance (
-attendance_ID int PRIMARY KEY IDENTITY(1,1), 
+attendance_ID int IDENTITY(1,1) PRIMARY KEY , 
 date date, 
 check_in_time time, 
 check_out_time time,
 status varchar (50) DEFAULT 'absent', 
 emp_ID int ,
 total_duration as check_out_time- check_in_time,
+total_duration AS check_out_time - check_in_time ,
 CHECK (status in ('absent', 'attended')),
-FOREIGN KEY (emp_ID) REFERENCES Employee(employee_ID)); 
+FOREIGN KEY (emp_ID) REFERENCES Employee(employee_ID)
+); 
 
 CREATE TABLE Deduction (
 deduction_ID int IDENTITY(1,1),
@@ -184,7 +193,7 @@ PRIMARY KEY(deduction_ID, emp_ID)
 );
 
 CREATE TABLE Performance (
-performance_ID int PRIMARY KEY IDENTITY(1,1),
+performance_ID int IDENTITY(1,1) PRIMARY KEY ,
 rating int,
 comments varchar (50),
 semester char (3), 
@@ -198,9 +207,10 @@ Emp1_ID int ,
 Emp2_ID int ,
 from_date date, 
 to_date date,
-PRIMARY KEY (Emp1_ID, Emp1_ID),
+PRIMARY KEY (Emp1_ID, Emp2_ID),
 FOREIGN KEY (Emp1_ID) REFERENCES Employee (Employee_ID),
-FOREIGN KEY (Emp2_ID) REFERENCES Employee (Employee_ID));
+FOREIGN KEY (Emp2_ID) REFERENCES Employee (Employee_ID)
+);
 
 CREATE TABLE Employee_Approve_Leave (
 Emp1_ID int,
@@ -208,54 +218,114 @@ Leave_ID int,
 status varchar (50),
 PRIMARY KEY (Emp1_ID, Leave_ID),
 FOREIGN KEY (Emp1_ID) REFERENCES Employee (Employee_ID),
-FOREIGN KEY (Leave_ID) REFERENCES Leave (request_ID));
+FOREIGN KEY (Leave_ID) REFERENCES Leave (request_ID)
+);
 
 GO
 
-EXEC createAllTables;
 
 GO
-CREATE PROC dropAllTables 
-as 
+CREATE PROC dropAllTables
+AS
+    DROP TABLE Employee_Approve_Leave;
+    DROP TABLE Employee_Replace_Employee;
+    DROP TABLE Performance;
+    DROP TABLE Deduction;
+    DROP TABLE Attendance;
+    DROP TABLE Payroll;
+    DROP TABLE Document;
+    DROP TABLE Compensation_Leave;
+    DROP TABLE Unpaid_Leave;
+    DROP TABLE Medical_Leave;
+    DROP TABLE Accidental_Leave;
+    DROP TABLE Annual_Leave;
+    DROP TABLE [Leave];
+    DROP TABLE Role_existsIn_Department;
+    DROP TABLE Employee_Role;
+    DROP TABLE Role;
+    DROP TABLE Employee_Phone;
+    DROP TABLE Employee;
+    DROP TABLE Department;
+GO;
 
-DROP TABLE Department, Employee, Employee_Phone, Role, Employee_Role, Role_existsIn_Department, Leave, Annual_Leave, Accidental_Leave, Medical_Leave, Unpaid_Leave, Compensation_Leave, Document, Payroll , Attendance, Deduction, Performance, Employee_Replace_Employee, Employee_Approve_Leave;
 
 GO
+CREATE PROC dropAllProceduresFunctionsViews
+AS
+    -- DROP ALL VIEWS-----
+    DROP VIEW allEmployeeProfiles;
+    DROP VIEW NoEmployeeDept;
+    DROP VIEW allPerformance;
+    DROP VIEW allRejectedMedicals;
+    DROP VIEW allEmployeeAttendance;
+    -- DROP ALL FUNCTIONS---
+    DROP FUNCTION HRLoginValidation;
+    DROP FUNCTION Bonus_amount;
+    DROP FUNCTION EmployeeLoginValidation;
+    DROP FUNCTION MyPerformance;
+    DROP FUNCTION MyAttendance;
+    DROP FUNCTION Last_month_payroll;
+    DROP FUNCTION Deductions_Attendance;
+    DROP FUNCTION Is_On_Leave;
+    DROP FUNCTION Status_leaves;
+    -- DROP ALL STORED PROCEDURES-----
+    DROP PROC createAllTables;
+    DROP PROC dropAllTables;
+    DROP PROC clearAllTables;
+    DROP PROC Update_Status_Doc;         
+    DROP PROC Remove_Deductions;
+    DROP PROC Update_Employment_Status;
+    DROP PROC Create_Holiday;
+    DROP PROC Add_Holiday;
+    DROP PROC Initiate_Attendance;
+    DROP PROC Update_Attendance;
+    DROP PROC Remove_Holiday;
+    DROP PROC Remove_DayOff;
+    DROP PROC Remove_Approved_Leaves;
+    DROP PROC Replace_employee;
+    DROP PROC HR_approval_an_acc;
+    DROP PROC HR_approval_unpaid;
+    DROP PROC HR_approval_comp;
+    DROP PROC Deduction_hours;
+    DROP PROC Deduction_days;
+    DROP PROC Deduction_unpaid;
+    DROP PROC Add_Payroll;
+    DROP PROC Submit_annual;
+    DROP PROC Submit_accidental;
+    DROP PROC Submit_medical;
+    DROP PROC Submit_unpaid;
+    DROP PROC Upperboard_approve_annual;
+    DROP PROC Upperboard_approve_unpaids;
+    DROP PROC Submit_compensation;
+    DROP PROC Dean_andHR_Evaluation;
 
-EXEC dropAllTables;
+GO;
 
-GO 
-CREATE PROC dropAllPROCsFunctionsViews 
-as 
-DROP PROC createAllTables ,dropAllTables,clearAllTables ;
+
 GO
+CREATE PROC clearAllTables
+AS
+    TRUNCATE TABLE Employee_Approve_Leave;
+    TRUNCATE TABLE Employee_Replace_Employee;
+    TRUNCATE TABLE Performance;
+    TRUNCATE TABLE Deduction;
+    TRUNCATE TABLE Attendance;
+    TRUNCATE TABLE Payroll;
+    TRUNCATE TABLE Document;
+    TRUNCATE TABLE Compensation_Leave;
+    TRUNCATE TABLE Unpaid_Leave;
+    TRUNCATE TABLE Medical_Leave;
+    TRUNCATE TABLE Accidental_Leave;
+    TRUNCATE TABLE Annual_Leave;
+    TRUNCATE TABLE [Leave];          
+    TRUNCATE TABLE Role_existsIn_Department;
+    TRUNCATE TABLE Employee_Role;
+    TRUNCATE TABLE Role;
+    TRUNCATE TABLE Employee_Phone;
+    TRUNCATE TABLE Employee;
+    TRUNCATE TABLE Department;
+GO;
 
-GO
-CREATE PROC clearAllTables 
-as 
-
-Truncate table Department;
-truncate table Employee;
-truncate table Employee_Phone;
-truncate table Role;
-truncate table Employee_Role;
-truncate table Role_existsIn_Department;
-truncate table Leave;
-truncate table Annual_Leave;
-truncate table Accidental_Leave;
-truncate table Medical_Leave;
-truncate table Unpaid_Leave; 
-truncate table Compensation_Leave;
-truncate table Document;
-truncate table Payroll;
-truncate table Attendance;
-truncate table Deduction;
-truncate table Performance;
-truncate table Employee_Replace_Employee;
-truncate table Employee_Approve_Leave;
-GO
-
-EXEC clearAllTables;
 
 GO
  

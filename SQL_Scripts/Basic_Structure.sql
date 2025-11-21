@@ -1341,9 +1341,6 @@ BEGIN
     INSERT INTO Deduction (emp_ID, date, amount, type,  unpaid_ID, attendance_ID)
     VALUES (@employee_ID, @first_missing_date, @amount, 'missing_hours', NULL, @first_attendance_id);
 end
-GO
-
-    end
 
 go
 
@@ -1400,8 +1397,10 @@ where (
 
  
 Return @Y
+end
 --2.4(h)--
 GO
+
 CREATE FUNCTION Bonus_amount
 (
     @employee_ID INT
@@ -1583,7 +1582,7 @@ return @success
 end
 go
 
- END;
+
 --2.4)f) yasmin ANNOYING AF WILL SE LATER
 
 
@@ -1608,9 +1607,22 @@ go
     --END;
 
 -- 2.4)g) yasmin
---2.4)I) yasmin
 
+--2.4)I) yasmin
+-- helper function to calculate salary
 go
+
+CREATE FUNCTION Calc_Salary (@employee_ID int)
+returns decimal (10,2)
+AS
+begin
+DECLARE @salary decimal (10,2)
+--code to calculate salary
+return @salary
+end
+go
+
+
 
 CREATE PROC Add_Payroll 
 @employee_ID int,
@@ -1626,9 +1638,7 @@ set @Bonus = dbo.Bonus_amount (@employee_ID)
 set @totalDeductions = (SELECT SUM (amount) FROM Deduction 
 WHERE emp_ID = @employee_ID AND date BETWEEN @from AND @to and status = 'pending' )
 
-set @final_salary_amount = 
-(SELECT salary FROM Employee WHERE employee_ID = @employee_ID) -- is there a posibility that salary is null? should i calculate it?
-+ @Bonus - @totalDeductions
+set @final_salary_amount =  dbo.Calc_Salary (@employee_ID ) + @Bonus - @totalDeductions
 
 GO
 INSERT INTO
@@ -1643,9 +1653,12 @@ SET status = 'finalized'
 WHERE emp_ID = @employee_ID AND date BETWEEN @from AND @to and status = 'pending'
 
 go
---2.5)G) 
----2.5)I) 
---2.5)J)
+--2.5)G) yasmin
+
+
+---2.5)I) yasmin
+--2.5)J) yasmin
+
 
 --2.5 h
 

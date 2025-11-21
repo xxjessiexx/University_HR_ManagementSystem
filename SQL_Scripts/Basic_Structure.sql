@@ -1309,7 +1309,7 @@ BEGIN
     SET @rate_per_hour = (@salary / 22.0) / 8.0;
     SELECT 
         @totalMissingMinutes = SUM(
-            CasE 
+            Case 
                 WHEN status = 'attended'
                      AND DATEDIFF(MINUTE, check_in_time, check_out_time) < 480
                 THEN 480 - DATEDIFF(MINUTE, check_in_time, check_out_time)
@@ -1527,7 +1527,67 @@ return @success
 end
 go
 
+--2.4)f) yasmin ANNOYING AF WILL SE LATER
 
+
+--CREATE PROC Deduction_days
+  --  @employee_id INT
+    --as
+    --BEGIN
+--    declare @deduct as int
+
+-- SELECT @deduct = COUNT(*)
+  --  FROM Employee E INNER JOIN Attendance A
+      --  ON E.employee_ID = A.emp_ID
+  --  WHERE E.employee_ID = @employee_id
+  --    AND A.check_in_time IS NULL
+    --  AND A.check_out_time IS NULL;
+  
+
+--  INSERT INTO Deduction (emp_ID, date, amount, type,  unpaid_ID, attendance_ID)
+  --  select 
+
+
+    --END;
+
+-- 2.4)g) yasmin
+--2.4)I) yasmin
+
+go
+
+CREATE PROC Add_Payroll 
+@employee_ID int,
+@from date, 
+@to date
+as
+DECLARE @Bonus decimal (10,2)
+DECLARE @totalDeductions decimal (10,2)
+DECLARE @final_salary_amount decimal (10,1)
+
+set @Bonus = dbo.Bonus_amount (@employee_ID)
+
+set @totalDeductions = (SELECT SUM (amount) FROM Deduction 
+WHERE emp_ID = @employee_ID AND date BETWEEN @from AND @to and status = 'pending' )
+
+set @final_salary_amount = 
+(SELECT salary FROM Employee WHERE employee_ID = @employee_ID) -- is there a posibility that salary is null? should i calculate it?
++ @Bonus - @totalDeductions
+
+INSERT INTO
+Payroll ( payment_date, final_salary_amount, from_date,
+to_date,  bonus_amount, deductions_amount, emp_ID ) --how am i supposed to add comments??
+
+VALUES ( GETDATE(), @final_salary_amount,@from,
+@to,  @Bonus, @totalDeductions, @employee_ID)
+
+UPDATE Deduction
+SET status = 'finalized'
+WHERE emp_ID = @employee_ID AND date BETWEEN @from AND @to and status = 'pending'
+
+go
+--2.5)G) 
+---2.5)I) 
+--2.5)J)
 
 
  

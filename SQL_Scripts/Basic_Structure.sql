@@ -165,7 +165,7 @@ check_in_time time,
 check_out_time time,
 status varchar (50) DEFAULT 'absent', 
 emp_ID int ,
-total_duration AS check_out_time - check_in_time ,
+total_duration AS (DATEDIFF(MINUTE, check_in_time, check_out_time)), --duration in minutes--
 CHECK (status in ('absent', 'attended')),
 FOREIGN KEY (emp_ID) REFERENCES Employee(employee_ID)
 ); 
@@ -216,7 +216,7 @@ FOREIGN KEY (Emp1_ID) REFERENCES Employee (Employee_ID),
 FOREIGN KEY (Leave_ID) REFERENCES Leave (request_ID)
 );
 
-go;
+go
 
 
 GO
@@ -241,7 +241,7 @@ AS
     DROP TABLE Employee_Phone;
     DROP TABLE Employee;
     DROP TABLE Department;
-GO;
+GO
 
 
 GO
@@ -294,7 +294,7 @@ AS
     DROP PROC Submit_compensation;
     DROP PROC Dean_andHR_Evaluation;
 
-GO;
+GO
 
 
 GO
@@ -785,7 +785,6 @@ CREATE PROC Replace_employee
     @from_date DATE,
     @to_date   DATE
 AS
-BEGIN
     DECLARE
         @isBusy INT;
     SET @isBusy = 0;
@@ -822,7 +821,6 @@ BEGIN
         RETURN;
     INSERT INTO Employee_Replace_Employee (Emp1_ID, Emp2_ID, from_date, to_date)
     VALUES (@Emp1_ID, @Emp2_ID, @from_date, @to_date);
-END
 GO;
 
 --2.4(b)---
@@ -831,7 +829,6 @@ CREATE PROC HR_approval_an_acc
     @request_ID INT,
     @HR_ID      INT
 AS
-BEGIN
     DECLARE 
         @emp_ID             INT,
         @start_date         DATE,
@@ -998,7 +995,6 @@ END
             WHERE employee_ID = @emp_ID;
         END
     END
-END
 GO;
 
 --2.4(c)---
@@ -1007,7 +1003,6 @@ CREATE PROC HR_approval_unpaid
     @request_ID INT, 
     @HR_ID      INT 
 AS
-BEGIN
     DECLARE 
         @emp_ID         INT,
         @num_days       INT,
@@ -1090,7 +1085,6 @@ BEGIN
     UPDATE Leave
     SET final_approval_status = @status
     WHERE request_ID = @request_ID;
-END
 GO;
 
 --2.4(d)--
@@ -1099,7 +1093,6 @@ CREATE PROC HR_approval_comp
     @request_ID INT,
     @HR_ID      INT
 AS
-BEGIN
     DECLARE
         @emp_ID                   INT,
         @reason                   VARCHAR(50),
@@ -1272,7 +1265,6 @@ BEGIN
     UPDATE Leave
     SET final_approval_status = @status
     WHERE request_ID = @request_ID;
-END
 GO;
 
 ---2.4(e)---
@@ -1280,11 +1272,13 @@ GO
 CREATE PROC Deduction_hours
     @employee_ID INT
 AS
-BEGIN
     DECLARE
         @year                INT,
         @month               INT,
         @salary              DECIMAL(10,2),
+        @base_salary         DECIMAL(10,2),
+        @perc_YOE            DECIMAL(5,2),
+        @YOE                 INT,
         @rate_per_hour       DECIMAL(10,4),
         @totalMissingMinutes INT,
         @missingHours        DECIMAL(10,4),
@@ -1294,13 +1288,25 @@ BEGIN
 
     SET @year  = YEAR(GETDATE());
     SET @month = MONTH(GETDATE());
-    SELECT @salary = salary
+    -- 1) Get highest-rank role and get its base salary and per yoe-----
+    SELECT TOP 1
+        @base_salary = R.base_salary,
+        @perc_YOE    = R.percentage_YOE
+    FROM Employee_Role ER
+    JOIN Role R ON ER.role_name = R.role_name
+    WHERE ER.emp_ID = @employee_ID
+    ORDER BY R.rank DESC;       
+
+    SELECT @YOE = years_of_experience
     FROM Employee
     WHERE employee_ID = @employee_ID;
 
-    IF @salary IS NULL
-        RETURN;
-    SET @rate_per_hour = (@salary / 22.0) / 8.0;
+    IF @base_salary IS NULL
+        RETURN;  -- employee has no role ? no deduction
+
+    SET @salary =@base_salary + (@perc_YOE / 100.0) * @YOE * @base_salary;
+    SET @rate_per_hour = (@salary / 30.0) / 8.0;
+    -- 3) Sum total missing minutes for this month----
     SELECT 
         @totalMissingMinutes = SUM(
             CASE 
@@ -1312,30 +1318,32 @@ BEGIN
         )
     FROM Attendance
     WHERE emp_ID = @employee_ID
-      AND YEAR(date)  = @year
-      AND MONTH(date) = @month;
+      AND YEAR([date])  = @year
+      AND MONTH([date]) = @month;
 
     IF @totalMissingMinutes IS NULL OR @totalMissingMinutes <= 0
         RETURN;
- 
+    -- 4) Get FIRST day with missing hours (month)----------
     SELECT TOP 1
         @first_attendance_id = attendance_ID,
-        @first_missing_date  = date
+        @first_missing_date  = [date]
     FROM Attendance
     WHERE emp_ID = @employee_ID
-      AND YEAR(date)  = @year
-      AND MONTH(date) = @month
+      AND YEAR([date])  = @year
+      AND MONTH([date]) = @month
       AND status = 'attended'
       AND DATEDIFF(MINUTE, check_in_time, check_out_time) < 480
-    ORDER BY date, attendance_ID;
+    ORDER BY [date], attendance_ID;
+
     IF @first_attendance_id IS NULL
         RETURN;
-    SET @missingHours = @totalMissingMinutes / 60.0;        
-    SET @amount       = @rate_per_hour * @missingHours;     
-    INSERT INTO Deduction (emp_ID, date, amount, type,  unpaid_ID, attendance_ID)
+    SET @missingHours = @totalMissingMinutes / 60.0;
+    SET @amount       = @rate_per_hour * @missingHours;
+
+    INSERT INTO Deduction (emp_ID, [date], amount, type, unpaid_ID, attendance_ID)
     VALUES (@employee_ID, @first_missing_date, @amount, 'missing_hours', NULL, @first_attendance_id);
-end
 GO;
+
 
 
 --2.4(h)--
@@ -1348,6 +1356,9 @@ RETURNS DECIMAL(10,2)
 AS
 BEGIN
     DECLARE
+        @base_salary      DECIMAL(10,2),
+        @perc_YOE         DECIMAL(5,2),
+        @YOE              INT,
         @salary           DECIMAL(10,2),
         @rate_per_hour    DECIMAL(10,4),
         @extraMinutes     INT,
@@ -1359,25 +1370,29 @@ BEGIN
     -- Work on current year & month
     SET @year  = YEAR(GETDATE());
     SET @month = MONTH(GETDATE());
-    SELECT @salary = salary
-    FROM Employee
-    WHERE employee_ID = @employee_ID;
-    -- If no salary / employee, bonus = 0
-    IF @salary IS NULL
-        RETURN 0;
-    -- 2) Get overtime factor from highest-rank role(smallest rank value)------
+    -- 1) Get highest-rank role and its base_salary, YOE% and overtime%
     SELECT TOP 1
+        @base_salary     = R.base_salary,
+        @perc_YOE        = R.percentage_YOE,
         @overtime_factor = R.percentage_overtime
     FROM Employee_Role ER
     JOIN Role R ON ER.role_name = R.role_name
     WHERE ER.emp_ID = @employee_ID
-    ORDER BY R.rank;              
+    ORDER BY R.rank;          -- highest rank = smallest rank value
 
+    SELECT @YOE = years_of_experience
+    FROM Employee
+    WHERE employee_ID = @employee_ID;
+
+    -- If no role or no experience info, bonus = 0
+    IF @base_salary IS NULL OR @YOE IS NULL
+        RETURN 0;
+
+    -- If no overtime factor, treat as 0
     IF @overtime_factor IS NULL
         SET @overtime_factor = 0;
-
-    SET @rate_per_hour = (@salary / 22.0) / 8.0;
-
+    SET @salary =@base_salary + (@perc_YOE / 100.0) * @YOE * @base_salary;
+    SET @rate_per_hour = (@salary / 30.0) / 8.0;
     SELECT 
         @extraMinutes = SUM(
             CASE 
@@ -1391,7 +1406,7 @@ BEGIN
     WHERE emp_ID = @employee_ID
       AND YEAR([date])  = @year
       AND MONTH([date]) = @month;
-
+    -- No overtime ? bonus = 0
     IF @extraMinutes IS NULL OR @extraMinutes <= 0
         RETURN 0;
     SET @extraHours = @extraMinutes / 60.0;
@@ -1399,7 +1414,8 @@ BEGIN
 
     RETURN @bonus;
 END
-GO;
+GO
+
 
 --2.5(a)--
 GO
@@ -1420,7 +1436,7 @@ BEGIN
 
     RETURN @success;
 END
-GO;
+GO
 
 
 --2.5(b)---
@@ -1440,7 +1456,7 @@ RETURN
     WHERE emp_ID = @employee_ID
       AND semester = @semester
 );
-GO;
+GO
 
 --2.2)a)
 go
@@ -1477,19 +1493,6 @@ FROM Performance
 WHERE semester like 'W%';
 go
 
-
-
-
-	
-
-
-
-
- 
- 
-
-
- 
 
 
 

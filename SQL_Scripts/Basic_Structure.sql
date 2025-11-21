@@ -490,7 +490,7 @@ WHERE UL.request_ID = @request_ID);
 go 
 
 --2.3 a
-CREATE PROCEDURE Update_Status_Doc 
+CREATE PROC Update_Status_Doc 
 AS 
 
 if expiry_date  < CURRENT_TIMESTAMP 
@@ -505,7 +505,7 @@ EXEC Update_Status_Doc ;
 go
 
 --2.3 b
-CREATE PROCEDURE Remove_Deductions 
+CREATE PROC Remove_Deductions 
 AS 
 
 DELETE FROM Deduction 
@@ -523,7 +523,7 @@ where emp_ID IN (
 go
 
 --2.3 c
- CREATE PROCEDURE  Update_Employment_Status 
+ CREATE PROC  Update_Employment_Status 
  
   @Employee_ID int 
 AS 
@@ -542,7 +542,7 @@ EXEC  Update_Employment_Status ;
 go
 
 --2.3 d
-CREATE PROCEDURE Create_Holiday 
+CREATE PROC Create_Holiday 
 AS
 
 CREATE TABLE Holiday(
@@ -559,7 +559,7 @@ EXEC Create_Holiday ;
 go
 
 --2.3 e
-CREATE PROCEDURE Add_Holiday 
+CREATE PROC Add_Holiday 
 
  @holiday_name varchar(50),
  @from_date date ,

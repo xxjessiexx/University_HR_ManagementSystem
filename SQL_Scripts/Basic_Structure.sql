@@ -246,6 +246,7 @@ AS
     DROP TABLE Employee_Phone;
     DROP TABLE Employee;
     DROP TABLE Department;
+    DROP TABLE IF EXISTS Holiday; -- do i need to drop holiday table??
 GO
  exec dropAllTables
 
@@ -259,7 +260,7 @@ AS
     DROP VIEW allRejectedMedicals;
     DROP VIEW allEmployeeAttendance;
     -- DROP ALL FUNCTIONS---
-    DROP FUNCTION HRLoginValidation;
+    DROP FUNCTION HRLoginValidation; --do i need to drop my helper functionss??
     DROP FUNCTION Bonus_amount;
     DROP FUNCTION EmployeeLoginValidation;
     DROP FUNCTION MyPerformance;
@@ -391,49 +392,7 @@ BEGIN
 END;
 GO
 EXEC Remove_Holiday;
-GO 
 
-CREATE PROC Remove_DayOff
-    @employee_id INT
-as
-BEGIN
-    
-
-    DECLARE @dayoff VARCHAR(50);
-    DECLARE @dayoff_num INT;
-
-    DECLARE @curr_m INT = MONTH(CURRENT_TIMESTAMP);
-    DECLARE @curr_y INT = YEAR(CURRENT_TIMESTAMP);
-
-   
-    SELECT @dayoff = official_day_off
-    FROM Employee
-    WHERE employee_ID = @employee_id;
-
-   
-    IF @dayoff = 'Sunday'
-        SET @dayoff_num = 1;
-    ELSE IF @dayoff = 'Monday'
-        SET @dayoff_num = 2;
-    ELSE IF @dayoff = 'Tuesday'
-        SET @dayoff_num = 3;
-    ELSE IF @dayoff = 'Wednesday'
-        SET @dayoff_num = 4;
-    ELSE IF @dayoff = 'Thursday'
-        SET @dayoff_num = 5;
-    ELSE IF @dayoff = 'Friday'
-        SET @dayoff_num = 6;
-    ELSE IF @dayoff = 'Saturday'
-        SET @dayoff_num = 7;
-
-    
-    DELETE FROM Attendance
-    WHERE emp_ID = @employee_id
-      AND status = 'Absent'
-      AND DATEPART(WEEKDAY, date) = @dayoff_num
-      AND MONTH(date) = @curr_m
-      AND YEAR(date) = @curr_y; 
-END
 GO
 --EXEC Remove_DayOff; needs parameters
 GO
@@ -1561,7 +1520,7 @@ CREATE VIEW allEmployeeAttendance
 as
 SELECT * 
 FROM Attendance --- am i allowed to use this? how else would i check the date is yesterday?
-WHERE status = 'attended' AND date = DATEADD (day,-1,GETDATE())  ;
+WHERE status = 'attended' AND date = CAST(DATEADD(day, -1, GETDATE()) AS DATE)  ;
 GO
 
 --2.4)a) yasmin DONE
@@ -1577,7 +1536,7 @@ FROM Employee E INNER JOIN Employee_Role R
 ON E.employee_ID = R.emp_ID
 WHERE E.employee_ID= @employee_ID AND
 E.password= @password AND
-R.role_name LIKE 'HR' 
+R.role_name LIKE 'HR%' 
 AND E.employment_status='active')
 
 set @success=1
@@ -1611,9 +1570,10 @@ SELECT TOP 1
     FROM Employee
     WHERE employee_ID = @employee_ID;
 
-    IF @base_salary IS NULL
-
-    SET @salary =@base_salary + (@perc_YOE / 100.0) * @YOE * @base_salary;
+    IF @base_salary IS not NULL and @YOE IS not NULL
+    begin
+    SET @salary =@base_salary + (@perc_YOE  / 100.0) * @YOE * @base_salary;
+    end
       return @salary
 end
 go
@@ -1738,6 +1698,7 @@ CREATE PROC Add_Payroll
 @from date, 
 @to date
 as
+begin
 DECLARE @Bonus decimal (10,2)
 DECLARE @totalDeductions decimal (10,2)
 DECLARE @final_salary_amount decimal (10,1)
@@ -1748,11 +1709,11 @@ set @totalDeductions = (SELECT SUM (amount) FROM Deduction
 WHERE emp_ID = @employee_ID AND date BETWEEN @from AND @to and status = 'pending' )
 
 set @final_salary_amount =  dbo.Calc_Salary (@employee_ID ) + @Bonus - @totalDeductions
-
+--how am i supposed to add comments??
 
 INSERT INTO
 Payroll ( payment_date, final_salary_amount, from_date,
-to_date,  bonus_amount, deductions_amount, emp_ID ) --how am i supposed to add comments??
+to_date,  bonus_amount, deductions_amount, emp_ID ) 
 
 VALUES ( GETDATE(), @final_salary_amount,@from,
 @to,  @Bonus, @totalDeductions, @employee_ID)
@@ -1760,7 +1721,7 @@ VALUES ( GETDATE(), @final_salary_amount,@from,
 UPDATE Deduction
 SET status = 'finalized'
 WHERE emp_ID = @employee_ID AND date BETWEEN @from AND @to and status = 'pending'
-
+end
 go
 --2.5)G) yasmin Apply for an annual leave   
 

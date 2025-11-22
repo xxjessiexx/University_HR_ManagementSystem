@@ -462,9 +462,9 @@ GO
 GO
 CREATE PROC  Intitiate_Attendance 
 as 
-DECLARE @currentday DATE = CURRENT_TIMESTAMP;
+DECLARE @currentday DATE = CAST(GETDATE() AS DATE);
 INSERT INTO Attendance (date, check_in_time, check_out_time,  status, emp_ID)
-SELECT @currentday, NULL, NULL, 'Absent', employee_ID
+SELECT @currentday, NULL, NULL, 'absent', employee_ID
 FROM Employee
 WHERE employee_ID NOT IN (
     SELECT emp_ID 
@@ -478,25 +478,29 @@ GO
 --2.3(g)
 GO
 CREATE PROC Update_Attendance
-     @Employee_id int, 
-     @check_in time, --used underscore instead of - is it ok?
-     @check_out time
+     @Employee_id INT, 
+     @check_in TIME,
+     @check_out TIME
 AS
-    DECLARE @currentday DATE = CURRENT_TIMESTAMP;
-    DECLARE @Status VARCHAR(10); 
-  
+BEGIN
+    DECLARE @currentday DATE = CAST(GETDATE() AS DATE);
+    DECLARE @Status VARCHAR(10);
+    -- Determine status
     IF @check_in IS NOT NULL AND @check_out IS NOT NULL
-        SET @Status = 'Attended';
+        SET @Status = 'attended';    
     ELSE
-        SET @Status = 'Absent';
+        SET @Status = 'absent';
 
     UPDATE Attendance
     SET 
         check_in_time = @check_in,
         check_out_time = @check_out,
         status = @Status
-    WHERE emp_ID = @Employee_id AND date = @currentday;
+    WHERE emp_ID = @Employee_id 
+      AND [date] = @currentday;
+END
 GO
+
 
 --EXEC Update_Attendance; NEEDS PARAMETERS
 
@@ -514,45 +518,40 @@ END;
 GO
 
 --2.3 (i)
-go 
+GO
 CREATE PROC Remove_DayOff
     @Employee_id INT
 AS
 BEGIN
-    
+    SET DATEFIRST 7;    -- Ensure Sunday = 1
+
     DECLARE @dayoff VARCHAR(50);
     DECLARE @dayoff_num INT;
-    DECLARE @curr_m INT = MONTH(CURRENT_TIMESTAMP);
-    DECLARE @curr_y INT = YEAR(CURRENT_TIMESTAMP);
+    DECLARE @curr_month INT = MONTH(GETDATE());
+    DECLARE @curr_year  INT = YEAR(GETDATE());
 
-   
+    -- Get employee’s official weekly day off
     SELECT @dayoff = official_day_off
     FROM Employee
     WHERE employee_ID = @Employee_id;
 
-    IF @dayoff = 'Sunday'
-        SET @dayoff_num = 1;
-    ELSE IF @dayoff = 'Monday'
-        SET @dayoff_num = 2;
-    ELSE IF @dayoff = 'Tuesday'
-        SET @dayoff_num = 3;
-    ELSE IF @dayoff = 'Wednesday'
-        SET @dayoff_num = 4;
-    ELSE IF @dayoff = 'Thursday'
-        SET @dayoff_num = 5;
-    ELSE IF @dayoff = 'Friday'
-        SET @dayoff_num = 6;
-    ELSE IF @dayoff = 'Saturday'
-        SET @dayoff_num = 7;
+    -- Map weekday name to number
+    IF @dayoff = 'Sunday'      SET @dayoff_num = 1;
+    ELSE IF @dayoff = 'Monday' SET @dayoff_num = 2;
+    ELSE IF @dayoff = 'Tuesday' SET @dayoff_num = 3;
+    ELSE IF @dayoff = 'Wednesday' SET @dayoff_num = 4;
+    ELSE IF @dayoff = 'Thursday' SET @dayoff_num = 5;
+    ELSE IF @dayoff = 'Friday' SET @dayoff_num = 6;
+    ELSE IF @dayoff = 'Saturday' SET @dayoff_num = 7;
 
     DELETE FROM Attendance
     WHERE emp_ID = @Employee_id
-      AND status = 'Absent'
-      AND DATEPART(WEEKDAY, date) = @dayoff_num
-      AND MONTH(date) = @curr_month
-      AND YEAR(date) = @curr_year;
-END;
-go
+      AND status = 'absent'             
+      AND DATEPART(WEEKDAY, [date]) = @dayoff_num
+      AND MONTH([date]) = @curr_month
+      AND YEAR([date]) = @curr_year;
+END
+GO
 
 
 --2.3(j)

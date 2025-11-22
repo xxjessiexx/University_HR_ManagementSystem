@@ -2030,6 +2030,15 @@ SELECT TOP 1 @HRrep_id = E.employee_ID
 FROM Employee E INNER JOIN Employee_Role R ON (E.employee_ID= R.emp_ID)
 WHERE R.role_name = ('HR_Representative_'+ @employee_dep) AND E.employment_status='active';
 
+	IF @HRrep_id IS NULL
+BEGIN
+    SELECT TOP 1 @HRrep_id = E.employee_ID
+    FROM Employee E INNER 
+    JOIN Employee_Role R ON R.emp_ID = E.employee_ID
+    WHERE R.role_name LIKE 'HR_Representative_%'
+      AND E.employment_status = 'active';
+END
+
 INSERT INTO Employee_Approve_Leave (Emp1_ID , Leave_ID , status)
 VALUES (@HRrep_id , @get_req_id, 'pending');
 
@@ -2038,7 +2047,7 @@ VALUES (@medical_dr_id , @get_req_id, 'pending');
  
 GO
 
---2.5)L)
+--2.5)L) 
 GO
 CREATE PROC Submit_unpaid
 @employee_ID int, 
@@ -2052,10 +2061,10 @@ DECLARE @employee_dep VARCHAR(50);
 DECLARE @HRrep_id INT;
 DECLARE @get_req_id int;
 DECLARE @president_id int;
-DECLARE @employee_role VARCHAR(50);
 DECLARE @HR_manager_id int;
 DECLARE @higher_rank_emp_id int ;
 DECLARE @emp_rank int ;
+DECLARE @check bit;
 
 INSERT INTO Leave (date_of_request, start_date, end_date)
 VALUES (CURRENT_TIMESTAMP, @start_date, @end_date);
@@ -2074,20 +2083,35 @@ SELECT @employee_dep = E.dept_name
 FROM Employee E 
 WHERE E.employee_ID = @employee_ID;
 
-SELECT @employee_role = R.role_name
+IF exists (
+SELECT *
 FROM Employee_Role R
-WHERE R.emp_ID = @employee_ID ;
+WHERE R.emp_ID = @employee_ID AND (R.role_name = 'Dean' or R.role_name = 'Vice Dean'))
+	SET @check =1
+ELSE 
+	SET @check=0
+
 
 SELECT @president_id = R.emp_ID
 FROM Employee_Role R
 WHERE R.role_name = 'President';
 
 
-IF @employee_role in ('Dean', 'Vice Dean')
+IF @check=1 
 BEGIN 
 	SELECT TOP 1 @HRrep_id = E.employee_ID 
 	FROM Employee E INNER JOIN Employee_Role R ON (E.employee_ID= R.emp_ID)
 	WHERE R.role_name = ('HR_Representative_'+ @employee_dep) AND E.employment_status='active';
+
+	IF @HRrep_id IS NULL
+BEGIN
+    SELECT TOP 1 @HRrep_id = E.employee_ID
+    FROM Employee E INNER 
+    JOIN Employee_Role R ON R.emp_ID = E.employee_ID
+    WHERE R.role_name LIKE 'HR_Representative_%'
+      AND E.employment_status = 'active';
+END
+
 
 	INSERT INTO Employee_Approve_Leave (Emp1_ID , Leave_ID , status)
 	VALUES (@HRrep_id , @get_req_id, 'pending');
@@ -2113,12 +2137,21 @@ BEGIN
 	FROM Employee E INNER JOIN Employee_Role R ON (E.employee_ID= R.emp_ID)
 	WHERE R.role_name = ('HR_Representative_'+ @employee_dep) AND E.employment_status='active';
 
+		IF @HRrep_id IS NULL
+BEGIN
+    SELECT TOP 1 @HRrep_id = E.employee_ID
+    FROM Employee E INNER 
+    JOIN Employee_Role R ON R.emp_ID = E.employee_ID
+    WHERE R.role_name LIKE 'HR_Representative_%'
+      AND E.employment_status = 'active';
+END
+
 	INSERT INTO Employee_Approve_Leave (Emp1_ID , Leave_ID , status)
 	VALUES (@HRrep_id , @get_req_id, 'pending');   --HR representative 
 
     INSERT INTO Employee_Approve_Leave VALUES (@president_id, @get_req_id, 'pending'); --upperboard president
 	
-	SELECT @emp_rank = R.rank 
+	SELECT @emp_rank = MIN(R.rank) 
 	FROM Employee E inner join Employee_Role ER ON (E.employee_ID = ER.emp_ID)INNER JOIN Role R ON (ER.role_name = R.role_name)
 	WHERE  E.employee_id = @employee_ID ;
 
@@ -2192,6 +2225,15 @@ WHERE E.employee_ID = @employee_ID;
 SELECT TOP 1 @HRrep_id = E.employee_ID 
 FROM Employee E INNER JOIN Employee_Role R ON (E.employee_ID= R.emp_ID)
 WHERE R.role_name = ('HR_Representative_'+ @employee_departement) AND E.employment_status='active';
+
+	IF @HRrep_id IS NULL
+BEGIN
+    SELECT TOP 1 @HRrep_id = E.employee_ID
+    FROM Employee E INNER 
+    JOIN Employee_Role R ON R.emp_ID = E.employee_ID
+    WHERE R.role_name LIKE 'HR_Representative_%'
+      AND E.employment_status = 'active';
+END
 
 INSERT INTO Employee_Approve_Leave (Emp1_ID , Leave_ID , status)
 VALUES (@HRrep_id , @get_req_id, 'pending');

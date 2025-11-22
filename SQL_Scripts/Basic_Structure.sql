@@ -1929,7 +1929,7 @@ CREATE FUNCTION Status_leaves
 
 FROM leave inner join Annual_Leave on (Leave.request_ID=Annual_Leave.request_ID)
 
-where month(date_of_request)=month (CURRENT_TIMESTAMP)  
+where month(date_of_request) = month (CURRENT_TIMESTAMP)  
 AND @employee_ID =Annual_Leave.emp_ID 
 
 UNION 
@@ -2220,6 +2220,20 @@ GO
 go
 
 -- helper function that checks ur contract type
+  -- helper function to calculate deduced amount based on days 
+  CREATE FUNCTION Deduction_per_day
+  (@employee_ID int)
+     returns decimal (10,2)
+     AS
+     begin
+     DECLARE @salary decimal (10,2)
+     DECLARE @ded_per_day decimal (10,2)
+     set @salary  = dbo.Calc_Salary (@employee_ID )
+     set @ded_per_day = @salary /22.0 -- rate per day
+     return @ded_per_day
+     END
+     go
+
 
 CREATE FUNCTION type_contract (@employee_ID INT) returns varchar(50) --checks for part time contract
 AS
@@ -2477,31 +2491,9 @@ CREATE FUNCTION Status_leaves
 (
  SELECT Leave.request_ID, Leave.date_of_request, Leave.final_approval_status
 
-FROM leave inner join Annual_Leave on (Leave.request_ID=Annual_Leave.request_ID)
-
-     -- helper function to calculate deduced amount based on days 
-     CREATE FUNCTION Deduction_per_day
-     (@employee_ID int)
-     returns decimal (10,2)
-     AS
-     begin
-     DECLARE @salary decimal (10,2)
-     DECLARE @ded_per_day decimal (10,2)
-     set @salary  = dbo.Calc_Salary (@employee_ID )
-     set @ded_per_day = @salary /22.0 -- rate per day
-     return @ded_per_day
-     END
-     go
-
-
- 
-
-
-
-
-
- -- yasmeen added this part for testing
+FROM leave inner join Annual_Leave on (Leave.request_ID=Annual_Leave.request_ID) )
 go
+
 
 
 

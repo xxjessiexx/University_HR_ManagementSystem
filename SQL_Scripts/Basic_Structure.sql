@@ -246,7 +246,7 @@ AS
     DROP TABLE Employee_Phone;
     DROP TABLE Employee;
     DROP TABLE Department;
-    DROP TABLE IF EXISTS Holiday; -- do i need to drop holiday table??
+    DROP TABLE IF EXISTS Holiday; -- do i need to drop holiday table?? YES
 GO
  exec dropAllTables
 
@@ -261,7 +261,7 @@ AS
     DROP VIEW allRejectedMedicals;
     DROP VIEW allEmployeeAttendance;
     -- DROP ALL FUNCTIONS---
-    DROP FUNCTION HRLoginValidation; --do i need to drop my helper functionss??
+    DROP FUNCTION HRLoginValidation; --do i need to drop my helper functionss?? DROP
     DROP FUNCTION Bonus_amount;
     DROP FUNCTION EmployeeLoginValidation;
     DROP FUNCTION MyPerformance;
@@ -389,7 +389,7 @@ GO
 CREATE VIEW allEmployeeAttendance
 as
 SELECT * 
-FROM Attendance --- am i allowed to use this? how else would i check the date is yesterday?
+FROM Attendance --- am i allowed to use this? how else would i check the date is yesterday? YES
 WHERE status = 'attended' AND date = CAST(DATEADD(day, -1, GETDATE()) AS DATE)  ;
 GO
 
@@ -1611,7 +1611,7 @@ BEGIN
 END;
 GO
 -- WORKING ON IT GIVE ME A MIN , works probs
-CREATE PROCEDURE Deduction_unpaid -- are they always added at 1 of the month? 
+CREATE PROCEDURE Deduction_unpaid -- are they always added at 1 of the month?  
     @employee_ID INT
 AS
 BEGIN
@@ -1731,7 +1731,7 @@ set @totalDeductions = (SELECT SUM (amount) FROM Deduction
 WHERE emp_ID = @employee_ID AND date BETWEEN @from AND @to and status = 'pending' )
 
 set @final_salary_amount =  dbo.Calc_Salary (@employee_ID ) + @Bonus - @totalDeductions
---how am i supposed to add comments??
+--how am i supposed to add comments?? ANYTHING AADY
 
 INSERT INTO
 Payroll ( payment_date, final_salary_amount, from_date,
@@ -2357,20 +2357,20 @@ BEGIN
       -- Employee_Approve_Leave (Emp1_ID int (FK), Leave_ID int (FK), status: varchar (50))
 
       IF @HR IS NOT NULL 
-        INSERT INTO Employee_Approve_Leave VALUES (@HR, @id, 'pending');
+        INSERT INTO Employee_Approve_Leave VALUES (@HR, @id, 'pending'); --SAME DEP
 
 
     if (@role in ('Vice Dean','Dean'))
     begin
     -- insert into emp app req for 'higher rank'
-    declare @higherD int = dbo.get_Higher_Dean(@employee_ID ,@dep);
+    declare @higherD int = dbo.get_Higher_Dean(@employee_ID ,@dep); --PRESIDENT
     IF @higherD  IS NOT NULL 
           INSERT INTO Employee_Approve_Leave VALUES (@higherD, @id, 'pending')
 
     end
         else 
         begin
-        if (@role like 'HR%')
+        if (@role like 'HR%') --HR REP ONLY NEED MANAGER
         begin
         --insert into emp app req for 'higher rank in hr' | WHAT IF AN HR MANAGER WANTS TO SUBMIT THE LEAVE WHO'S THE HIGHER RANK???
           declare @HigherHR int = dbo.get_Higher_HR(@employee_ID ,@dep )
@@ -2381,12 +2381,12 @@ BEGIN
           -- insert into emp app req for normal employees
           declare @dean int = dbo.get_Dean(@dep);
           IF @dean  IS NOT NULL 
-          INSERT INTO Employee_Approve_Leave VALUES (@dean, @id, 'pending');
+          INSERT INTO Employee_Approve_Leave VALUES (@dean, @id, 'pending');  --SAME DEP
         end
 
       end
       --EMP1 REP EMP2
-      insert into Employee_Replace_Employee values (@employee_ID, @replacement_emp, @start_date , @end_date );
+      --insert into Employee_Replace_Employee values (@employee_ID, @replacement_emp, @start_date , @end_date ); -- ONLY WHEN APPROVED
 
 
     end

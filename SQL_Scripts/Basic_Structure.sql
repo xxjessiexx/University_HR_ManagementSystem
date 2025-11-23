@@ -277,7 +277,7 @@ AS
     DROP PROC Update_Employment_Status;
     DROP PROC Create_Holiday;
     DROP PROC Add_Holiday;
-    DROP PROC Initiate_Attendance;
+    DROP PROC Intitiate_Attendance ;
     DROP PROC Update_Attendance;
     DROP PROC Remove_Holiday;
     DROP PROC Remove_DayOff;
@@ -1419,6 +1419,7 @@ BEGIN
 END
 GO
 
+
 --2.4)I) yasmin DONE
 CREATE PROC Add_Payroll 
 @employee_ID int,
@@ -1827,6 +1828,15 @@ AND @employee_ID =Accidental_Leave.emp_ID
 
 )
 go
+--2.5 h
+
+CREATE FUNCTION Status_leaves
+ (@employee_ID INT)
+ RETURNS TABLE
+ AS
+ RETURN 
+(
+ SELECT Leave.request_ID, Leave.date_of_request, Leave.final_approval_status
 
 ---2.5)I) yasmin As a Dean/Vice-dean/President I can approve/reject annual leaves
 
@@ -1951,6 +1961,15 @@ SELECT TOP 1 @HRrep_id = E.employee_ID
 FROM Employee E INNER JOIN Employee_Role R ON (E.employee_ID= R.emp_ID)
 WHERE R.role_name = ('HR_Representative_'+ @employee_dep) AND E.employment_status='active';
 
+	IF @HRrep_id IS NULL
+BEGIN
+    SELECT TOP 1 @HRrep_id = E.employee_ID
+    FROM Employee E INNER 
+    JOIN Employee_Role R ON R.emp_ID = E.employee_ID
+    WHERE R.role_name LIKE 'HR_Representative_%'
+      AND E.employment_status = 'active';
+END
+
 INSERT INTO Employee_Approve_Leave (Emp1_ID , Leave_ID , status)
 VALUES (@HRrep_id , @get_req_id, 'pending');
 
@@ -1959,7 +1978,7 @@ VALUES (@medical_dr_id , @get_req_id, 'pending');
  
 GO
 
---2.5)L)
+--2.5)L) 
 GO
 CREATE PROC Submit_unpaid
 @employee_ID int, 
@@ -1973,10 +1992,10 @@ DECLARE @employee_dep VARCHAR(50);
 DECLARE @HRrep_id INT;
 DECLARE @get_req_id int;
 DECLARE @president_id int;
-DECLARE @employee_role VARCHAR(50);
 DECLARE @HR_manager_id int;
 DECLARE @higher_rank_emp_id int ;
 DECLARE @emp_rank int ;
+DECLARE @check bit;
 
 INSERT INTO Leave (date_of_request, start_date, end_date)
 VALUES (CURRENT_TIMESTAMP, @start_date, @end_date);
@@ -1995,20 +2014,35 @@ SELECT @employee_dep = E.dept_name
 FROM Employee E 
 WHERE E.employee_ID = @employee_ID;
 
-SELECT @employee_role = R.role_name
+IF exists (
+SELECT *
 FROM Employee_Role R
-WHERE R.emp_ID = @employee_ID ;
+WHERE R.emp_ID = @employee_ID AND (R.role_name = 'Dean' or R.role_name = 'Vice Dean'))
+	SET @check =1
+ELSE 
+	SET @check=0
+
 
 SELECT @president_id = R.emp_ID
 FROM Employee_Role R
 WHERE R.role_name = 'President';
 
 
-IF @employee_role in ('Dean', 'Vice Dean')
+IF @check=1 
 BEGIN 
 	SELECT TOP 1 @HRrep_id = E.employee_ID 
 	FROM Employee E INNER JOIN Employee_Role R ON (E.employee_ID= R.emp_ID)
 	WHERE R.role_name = ('HR_Representative_'+ @employee_dep) AND E.employment_status='active';
+
+	IF @HRrep_id IS NULL
+BEGIN
+    SELECT TOP 1 @HRrep_id = E.employee_ID
+    FROM Employee E INNER 
+    JOIN Employee_Role R ON R.emp_ID = E.employee_ID
+    WHERE R.role_name LIKE 'HR_Representative_%'
+      AND E.employment_status = 'active';
+END
+
 
 	INSERT INTO Employee_Approve_Leave (Emp1_ID , Leave_ID , status)
 	VALUES (@HRrep_id , @get_req_id, 'pending');
@@ -2033,6 +2067,15 @@ BEGIN
 	SELECT TOP 1 @HRrep_id = E.employee_ID 
 	FROM Employee E INNER JOIN Employee_Role R ON (E.employee_ID= R.emp_ID)
 	WHERE R.role_name = ('HR_Representative_'+ @employee_dep) AND E.employment_status='active';
+
+		IF @HRrep_id IS NULL
+BEGIN
+    SELECT TOP 1 @HRrep_id = E.employee_ID
+    FROM Employee E INNER 
+    JOIN Employee_Role R ON R.emp_ID = E.employee_ID
+    WHERE R.role_name LIKE 'HR_Representative_%'
+      AND E.employment_status = 'active';
+END
 
 	INSERT INTO Employee_Approve_Leave (Emp1_ID , Leave_ID , status)
 	VALUES (@HRrep_id , @get_req_id, 'pending');   --HR representative 

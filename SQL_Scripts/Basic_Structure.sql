@@ -937,9 +937,26 @@ END
             SET @status = 'rejected';
         END
     END
-    INSERT INTO Employee_Approve_Leave (Emp1_ID, Leave_ID, status)
-    VALUES (@HR_ID, @request_ID, @status);
-    UPDATE Leave
+        -- If HR already has an entry, update it; otherwise insert a new one
+    IF EXISTS (
+        SELECT 1 
+        FROM Employee_Approve_Leave
+        WHERE Emp1_ID = @HR_ID
+          AND Leave_ID = @request_ID
+    )
+    BEGIN
+        UPDATE Employee_Approve_Leave
+        SET status = @status
+        WHERE Emp1_ID = @HR_ID
+          AND Leave_ID = @request_ID;
+    END
+    ELSE
+    BEGIN
+        INSERT INTO Employee_Approve_Leave (Emp1_ID, Leave_ID, status)
+        VALUES (@HR_ID, @request_ID, @status);
+    END
+
+    UPDATE [Leave]
     SET final_approval_status = @status
     WHERE request_ID = @request_ID;
     IF @status = 'approved'
@@ -989,14 +1006,31 @@ AS
     BEGIN
         SET @status = 'rejected';
 
+            -- If HR already has an entry, update it; otherwise insert a new one
+    IF EXISTS (
+        SELECT 1 
+        FROM Employee_Approve_Leave
+        WHERE Emp1_ID = @HR_ID
+          AND Leave_ID = @request_ID
+    )
+    BEGIN
+        UPDATE Employee_Approve_Leave
+        SET status = @status
+        WHERE Emp1_ID = @HR_ID
+          AND Leave_ID = @request_ID;
+    END
+    ELSE
+    BEGIN
         INSERT INTO Employee_Approve_Leave (Emp1_ID, Leave_ID, status)
         VALUES (@HR_ID, @request_ID, @status);
+    END
 
-        UPDATE Leave
-        SET final_approval_status = @status
-        WHERE request_ID = @request_ID;
+    UPDATE [Leave]
+    SET final_approval_status = @status
+    WHERE request_ID = @request_ID;
 
-        RETURN;
+
+    RETURN;
     END
 
     SELECT 
@@ -1068,12 +1102,29 @@ AS
                 SET @status = 'rejected';
         END
     END
+        -- If HR already has an entry, update it; otherwise insert a new one
+    IF EXISTS (
+        SELECT 1 
+        FROM Employee_Approve_Leave
+        WHERE Emp1_ID = @HR_ID
+          AND Leave_ID = @request_ID
+    )
+    BEGIN
+        UPDATE Employee_Approve_Leave
+        SET status = @status
+        WHERE Emp1_ID = @HR_ID
+          AND Leave_ID = @request_ID;
+    END
+    ELSE
+    BEGIN
+        INSERT INTO Employee_Approve_Leave (Emp1_ID, Leave_ID, status)
+        VALUES (@HR_ID, @request_ID, @status);
+    END
 
-    INSERT INTO Employee_Approve_Leave (Emp1_ID, Leave_ID, status)
-    VALUES (@HR_ID, @request_ID, @status);
-    UPDATE Leave
+    UPDATE [Leave]
     SET final_approval_status = @status
     WHERE request_ID = @request_ID;
+
 GO
 
 
@@ -1119,12 +1170,28 @@ AS
     BEGIN
         SET @status = 'rejected';
 
+            -- If HR already has an entry, update it; otherwise insert a new one
+    IF EXISTS (
+        SELECT 1 
+        FROM Employee_Approve_Leave
+        WHERE Emp1_ID = @HR_ID
+          AND Leave_ID = @request_ID
+    )
+    BEGIN
+        UPDATE Employee_Approve_Leave
+        SET status = @status
+        WHERE Emp1_ID = @HR_ID
+          AND Leave_ID = @request_ID;
+    END
+    ELSE
+    BEGIN
         INSERT INTO Employee_Approve_Leave (Emp1_ID, Leave_ID, status)
         VALUES (@HR_ID, @request_ID, @status);
+    END
 
-        UPDATE [Leave]
-        SET final_approval_status = @status
-        WHERE request_ID = @request_ID;
+    UPDATE [Leave]
+    SET final_approval_status = @status
+    WHERE request_ID = @request_ID;
 
         RETURN;
     END
@@ -1243,9 +1310,26 @@ AS
             SET @status = 'rejected';
     END
 
-    INSERT INTO Employee_Approve_Leave (Emp1_ID, Leave_ID, status)
-    VALUES (@HR_ID, @request_ID, @status);
-    UPDATE Leave
+        -- If HR already has an entry, update it; otherwise insert a new one
+    IF EXISTS (
+        SELECT 1 
+        FROM Employee_Approve_Leave
+        WHERE Emp1_ID = @HR_ID
+          AND Leave_ID = @request_ID
+    )
+    BEGIN
+        UPDATE Employee_Approve_Leave
+        SET status = @status
+        WHERE Emp1_ID = @HR_ID
+          AND Leave_ID = @request_ID;
+    END
+    ELSE
+    BEGIN
+        INSERT INTO Employee_Approve_Leave (Emp1_ID, Leave_ID, status)
+        VALUES (@HR_ID, @request_ID, @status);
+    END
+
+    UPDATE [Leave]
     SET final_approval_status = @status
     WHERE request_ID = @request_ID;
 GO
@@ -3151,3 +3235,29 @@ values (5,19,'pending') --HR_MET
 insert into Employee_Approve_Leave (Emp1_ID,leave_ID,status)
 values (5,20,'pending') --HR_MET
 ------------------------------------------------------
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

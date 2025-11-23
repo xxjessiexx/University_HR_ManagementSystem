@@ -634,11 +634,6 @@ AS
          OR CL.emp_ID = @Emp2_ID
       );
 
-    SELECT @isBusy = @isBusy + COUNT(*)
-    FROM Employee_Replace_Employee
-    WHERE Emp2_ID   = @Emp2_ID
-      AND from_date <= @to_date
-      AND to_date   >= @from_date;
     IF @isBusy > 0
         RETURN;
     INSERT INTO Employee_Replace_Employee (Emp1_ID, Emp2_ID, from_date, to_date)
@@ -825,12 +820,6 @@ END
                  OR UL.emp_ID = @replacement_emp
                  OR CL.emp_ID = @replacement_emp
               );
-            --Replacement is already replacing someone
-            SELECT @isBusy = @isBusy + COUNT(*)
-            FROM Employee_Replace_Employee
-            WHERE Emp2_ID   = @replacement_emp
-              AND from_date <= @end_date
-              AND to_date   >= @start_date;
 
             IF @isBusy > 0
                 SET @status = 'rejected';
@@ -1152,13 +1141,6 @@ AS
                  OR UL.emp_ID = @replacement_emp
                  OR CL.emp_ID = @replacement_emp
               );
-
-            -- Replacement is already replacing someone in that period
-            SELECT @isBusy = @isBusy + COUNT(*)
-            FROM Employee_Replace_Employee
-            WHERE Emp2_ID   = @replacement_emp
-              AND from_date <= @end_date
-              AND to_date   >= @start_date;
 
             IF @isBusy > 0
                 SET @status = 'rejected';
@@ -1828,17 +1810,23 @@ AND @employee_ID =Accidental_Leave.emp_ID
 
 )
 go
---2.5 h
 
-CREATE FUNCTION Status_leaves
- (@employee_ID INT)
- RETURNS TABLE
- AS
- RETURN 
-(
- SELECT Leave.request_ID, Leave.date_of_request, Leave.final_approval_status
 
----2.5)I) yasmin As a Dean/Vice-dean/President I can approve/reject annual leaves
+     -- helper function to calculate deduced amount based on days 
+     CREATE FUNCTION Deduction_per_day
+     (@employee_ID int)
+     returns decimal (10,2)
+     AS
+     begin
+     DECLARE @salary decimal (10,2)
+     DECLARE @ded_per_day decimal (10,2)
+     set @salary  = dbo.Calc_Salary (@employee_ID )
+     set @ded_per_day = @salary /22.0 -- rate per day
+     return @ded_per_day
+     END
+     go
+
+--2.5)I) yasmin As a Dean/Vice-dean/President I can approve/reject annual leaves
 
 CREATE PROC Upperboard_approve_annual
 @request_ID int,

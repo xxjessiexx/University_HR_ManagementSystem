@@ -637,11 +637,6 @@ AS
          OR CL.emp_ID = @Emp2_ID
       );
 
-    SELECT @isBusy = @isBusy + COUNT(*)
-    FROM Employee_Replace_Employee
-    WHERE Emp2_ID   = @Emp2_ID
-      AND from_date <= @to_date
-      AND to_date   >= @from_date;
     IF @isBusy > 0
         RETURN;
     INSERT INTO Employee_Replace_Employee (Emp1_ID, Emp2_ID, from_date, to_date)
@@ -790,12 +785,6 @@ END
                  OR UL.emp_ID = @replacement_emp
                  OR CL.emp_ID = @replacement_emp
               );
-            --Replacement is already replacing someone
-            SELECT @isBusy = @isBusy + COUNT(*)
-            FROM Employee_Replace_Employee
-            WHERE Emp2_ID   = @replacement_emp
-              AND from_date <= @end_date
-              AND to_date   >= @start_date;
 
             IF @isBusy > 0
                 SET @status = 'rejected';
@@ -1117,13 +1106,6 @@ AS
                  OR UL.emp_ID = @replacement_emp
                  OR CL.emp_ID = @replacement_emp
               );
-
-            -- Replacement is already replacing someone in that period
-            SELECT @isBusy = @isBusy + COUNT(*)
-            FROM Employee_Replace_Employee
-            WHERE Emp2_ID   = @replacement_emp
-              AND from_date <= @end_date
-              AND to_date   >= @start_date;
 
             IF @isBusy > 0
                 SET @status = 'rejected';
@@ -1680,17 +1662,7 @@ AND @employee_ID =Accidental_Leave.emp_ID
 
 )
 go
---2.5 h
 
-CREATE FUNCTION Status_leaves
- (@employee_ID INT)
- RETURNS TABLE
- AS
- RETURN 
-(
- SELECT Leave.request_ID, Leave.date_of_request, Leave.final_approval_status
-
-FROM leave inner join Annual_Leave on (Leave.request_ID=Annual_Leave.request_ID)
 
      -- helper function to calculate deduced amount based on days 
      CREATE FUNCTION Deduction_per_day

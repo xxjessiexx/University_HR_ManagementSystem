@@ -325,6 +325,132 @@ AS
     TRUNCATE TABLE Employee;
     TRUNCATE TABLE Department;
 GO
+-- YASMIN'S HELPER FNS
+-- helper function to calculate salary DONE
+go
+
+-- helper function that checks ur contract type
+  -- helper function to calculate deduced amount based on days 
+  CREATE FUNCTION Deduction_per_day
+  (@employee_ID int)
+     returns decimal (10,2)
+     AS
+     begin
+     DECLARE @salary decimal (10,2)
+     DECLARE @ded_per_day decimal (10,2)
+     set @salary  = dbo.Calc_Salary (@employee_ID )
+     set @ded_per_day = @salary /22.0 -- rate per day
+     return @ded_per_day
+     END
+     go
+
+
+CREATE FUNCTION type_contract (@employee_ID INT) returns varchar(50) --checks for part time contract
+AS
+BEGIN
+   declare @part_time_check varchar(50) ;
+   select @part_time_check = type_of_contract
+    FROM Employee
+    WHERE employee_ID = @employee_ID;
+    return @part_time_check;
+END
+GO
+CREATE FUNCTION getRole(@employee_ID INT) returns varchar(50) --gets the role of an employee
+AS
+BEGIN
+DECLARE @role varchar(50);
+   SELECT TOP 1 @role = R.role_name
+    FROM Employee E 
+    inner join Employee_Role ER ON E.employee_ID = ER.emp_ID
+    inner join Role R ON ER.role_name = R.role_name
+    WHERE E.employee_ID = @employee_ID
+    ORDER BY R.rank ASC;
+
+RETURN @role
+END
+GO
+CREATE FUNCTION getDep(@employee_ID INT) returns varchar(50) --returns the department my emp works in
+AS
+BEGIN
+DECLARE @dep varchar(50);
+SELECT @dep = E.dept_name
+FROM Employee E
+WHERE E.employee_ID = @employee_ID
+
+RETURN @dep
+END
+GO
+
+CREATE FUNCTION HR_rep(@employee_ID INT) returns INT --get the representative for your employee
+AS
+BEGIN
+   DECLARE @HRrep INT;
+   DECLARE @dep VARCHAR(50) =  dbo.getDep(@employee_ID) ;
+   SELECT TOP 1 @HRrep = E.employee_ID 
+    FROM Employee E 
+    INNER JOIN Employee_Role R ON E.employee_ID = R.emp_ID
+    WHERE R.role_name = ('HR_Representative_' + @dep) AND E.employment_status = 'active';
+    
+    RETURN @HRrep;
+END
+GO
+CREATE FUNCTION get_Dean(@dep VARCHAR(50)) returns INT -- get id dean/vice dean in same dep
+AS
+BEGIN
+DECLARE @d_vd INT
+SELECT TOP 1 @d_vd = e.employee_ID
+FROM Employee E INNER JOIN  Employee_Role ER ON E.employee_ID = ER.emp_ID
+INNER JOIN Role R ON R.role_name = ER.role_name
+WHERE E.dept_name = @dep AND R.role_name IN ('Dean','Vice Dean')
+AND E.employment_status = 'active'
+ORDER BY R.rank ASC
+RETURN @d_vd;
+
+END
+GO
+CREATE FUNCTION get_Higher_Dean(@EmployeeRank INT, @dep VARCHAR(50)) returns INT -- get id dean/vice dean in same dep with rank higher than input
+AS
+BEGIN
+DECLARE @d_vd INT
+SELECT TOP 1 @d_vd = e.employee_ID
+FROM Employee E INNER JOIN  Employee_Role ER ON E.employee_ID = ER.emp_ID
+INNER JOIN Role R ON R.role_name = ER.role_name
+WHERE E.dept_name = @dep AND R.role_name IN ('Dean','Vice Dean')
+AND E.employment_status = 'active'
+AND R.rank < @EmployeeRank 
+ORDER BY R.rank ASC
+RETURN @d_vd;
+
+END
+go
+CREATE FUNCTION get_Higher_HR(@EmployeeRank INT, @dep VARCHAR(50)) returns INT -- get id HR in same dep with rank higher than input
+AS
+BEGIN
+DECLARE @HR INT
+SELECT TOP 1 @HR = E.employee_ID
+FROM Employee E INNER JOIN  Employee_Role ER ON E.employee_ID = ER.emp_ID
+INNER JOIN Role R ON R.role_name = ER.role_name
+WHERE E.dept_name like 'HR%' AND R.role_name like 'HR%'
+AND R.rank < @EmployeeRank
+ORDER BY R.rank ASC
+RETURN @HR;
+
+END
+
+     -- helper function to calculate deduced amount based on days 
+     go
+     CREATE FUNCTION Deduction_per_day
+     (@employee_ID int)
+     returns decimal (10,2)
+     AS
+     begin
+     DECLARE @salary decimal (10,2)
+     DECLARE @ded_per_day decimal (10,2)
+     set @salary  = dbo.Calc_Salary (@employee_ID )
+     set @ded_per_day = @salary /22.0 -- rate per day
+     return @ded_per_day
+     END
+     go
 
 --2.2)a)
 GO
@@ -663,44 +789,6 @@ return @success
 end
 go 
 
-
-GO
-CREATE PROC  Submit_compensation
-@employee_ID int, 
-@compensation_date date, 
-@reason varchar(50), 
-@date_of_original_workday date, 
-@replacement_emp int
-as
-DECLARE @HRrep_id int;
-DECLARE @employee_departement VARCHAR (50);
-DECLARE @get_req_id int;
-
-INSERT INTO Leave (date_of_request, start_date, end_date)
-VALUES(CURRENT_TIMESTAMP, @compensation_date, @compensation_date);
-
---how to get the req_id of the leave?
-SET @get_req_id= SCOPE_IDENTITY();
-
-
-INSERT INTO Compensation_Leave (request_ID, reason, date_of_original_workday, emp_ID, replacement_emp)
-VALUES (@get_req_id, @reason, @date_of_original_workday, @employee_ID, @replacement_emp);
-
-INSERT INTO Employee_Replace_Employee
-VALUES (@employee_ID, @replacement_emp, @compensation_date,@compensation_date);
-
-SELECT @employee_departement = E.dept_name
-FROM Employee E
-WHERE E.employee_ID = @employee_ID;
-
-SELECT TOP 1 @HRrep_id = E.employee_ID 
-FROM Employee E INNER JOIN Employee_Role R ON (E.employee_ID= R.emp_ID)
-WHERE R.role_name = ('HR_Representative_'+ @employee_departement) AND E.employment_status='active';
-
-INSERT INTO Employee_Approve_Leave (Emp1_ID , Leave_ID , status)
-VALUES (@HRrep_id , @get_req_id, 'pending');
-
-GO
 
 
 --2.4(b)---
@@ -1604,117 +1692,6 @@ Return @Y
 end
 
 
--- YASMIN'S HELPER FNS
--- helper function to calculate salary DONE
-go
-
--- helper function that checks ur contract type
-  -- helper function to calculate deduced amount based on days 
-  CREATE FUNCTION Deduction_per_day
-  (@employee_ID int)
-     returns decimal (10,2)
-     AS
-     begin
-     DECLARE @salary decimal (10,2)
-     DECLARE @ded_per_day decimal (10,2)
-     set @salary  = dbo.Calc_Salary (@employee_ID )
-     set @ded_per_day = @salary /22.0 -- rate per day
-     return @ded_per_day
-     END
-     go
-
-
-CREATE FUNCTION type_contract (@employee_ID INT) returns varchar(50) --checks for part time contract
-AS
-BEGIN
-   declare @part_time_check varchar(50) ;
-   select @part_time_check = type_of_contract
-    FROM Employee
-    WHERE employee_ID = @employee_ID;
-    return @part_time_check;
-END
-GO
-CREATE FUNCTION getRole(@employee_ID INT) returns varchar(50) --gets the role of an employee
-AS
-BEGIN
-DECLARE @role varchar(50);
-   SELECT TOP 1 @role = R.role_name
-    FROM Employee E 
-    inner join Employee_Role ER ON E.employee_ID = ER.emp_ID
-    inner join Role R ON ER.role_name = R.role_name
-    WHERE E.employee_ID = @employee_ID
-    ORDER BY R.rank ASC;
-
-RETURN @role
-END
-GO
-CREATE FUNCTION getDep(@employee_ID INT) returns varchar(50) --returns the department my emp works in
-AS
-BEGIN
-DECLARE @dep varchar(50);
-SELECT @dep = E.dept_name
-FROM Employee E
-WHERE E.employee_ID = @employee_ID
-
-RETURN @dep
-END
-GO
-
-CREATE FUNCTION HR_rep(@employee_ID INT) returns INT --get the representative for your employee
-AS
-BEGIN
-   DECLARE @HRrep INT;
-   DECLARE @dep VARCHAR(50) =  dbo.getDep(@employee_ID) ;
-   SELECT TOP 1 @HRrep = E.employee_ID 
-    FROM Employee E 
-    INNER JOIN Employee_Role R ON E.employee_ID = R.emp_ID
-    WHERE R.role_name = ('HR_Representative_' + @dep) AND E.employment_status = 'active';
-    
-    RETURN @HRrep;
-END
-GO
-CREATE FUNCTION get_Dean(@dep VARCHAR(50)) returns INT -- get id dean/vice dean in same dep
-AS
-BEGIN
-DECLARE @d_vd INT
-SELECT TOP 1 @d_vd = e.employee_ID
-FROM Employee E INNER JOIN  Employee_Role ER ON E.employee_ID = ER.emp_ID
-INNER JOIN Role R ON R.role_name = ER.role_name
-WHERE E.dept_name = @dep AND R.role_name IN ('Dean','Vice Dean')
-AND E.employment_status = 'active'
-ORDER BY R.rank ASC
-RETURN @d_vd;
-
-END
-GO
-CREATE FUNCTION get_Higher_Dean(@EmployeeRank INT, @dep VARCHAR(50)) returns INT -- get id dean/vice dean in same dep with rank higher than input
-AS
-BEGIN
-DECLARE @d_vd INT
-SELECT TOP 1 @d_vd = e.employee_ID
-FROM Employee E INNER JOIN  Employee_Role ER ON E.employee_ID = ER.emp_ID
-INNER JOIN Role R ON R.role_name = ER.role_name
-WHERE E.dept_name = @dep AND R.role_name IN ('Dean','Vice Dean')
-AND E.employment_status = 'active'
-AND R.rank < @EmployeeRank 
-ORDER BY R.rank ASC
-RETURN @d_vd;
-
-END
-go
-CREATE FUNCTION get_Higher_HR(@EmployeeRank INT, @dep VARCHAR(50)) returns INT -- get id HR in same dep with rank higher than input
-AS
-BEGIN
-DECLARE @HR INT
-SELECT TOP 1 @HR = E.employee_ID
-FROM Employee E INNER JOIN  Employee_Role ER ON E.employee_ID = ER.emp_ID
-INNER JOIN Role R ON R.role_name = ER.role_name
-WHERE E.dept_name like 'HR%' AND R.role_name like 'HR%'
-AND R.rank < @EmployeeRank
-ORDER BY R.rank ASC
-RETURN @HR;
-
-END
 
 go
 --2.5)G) yasmin Apply for an annual leave     !!!  WORK IN PROGRESS  !!!
@@ -1812,19 +1789,6 @@ AND @employee_ID =Accidental_Leave.emp_ID
 go
 
 
-     -- helper function to calculate deduced amount based on days 
-     CREATE FUNCTION Deduction_per_day
-     (@employee_ID int)
-     returns decimal (10,2)
-     AS
-     begin
-     DECLARE @salary decimal (10,2)
-     DECLARE @ded_per_day decimal (10,2)
-     set @salary  = dbo.Calc_Salary (@employee_ID )
-     set @ded_per_day = @salary /22.0 -- rate per day
-     return @ded_per_day
-     END
-     go
 
 --2.5)I) yasmin As a Dean/Vice-dean/President I can approve/reject annual leaves
 

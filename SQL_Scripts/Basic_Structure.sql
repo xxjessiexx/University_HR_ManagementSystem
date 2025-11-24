@@ -247,7 +247,7 @@ AS
     DROP TABLE Department;
     DROP TABLE IF EXISTS Holiday; -- do i need to drop holiday table?? YES
 GO
- 
+
 
  --2.1(d)
 GO
@@ -942,9 +942,10 @@ END
              ---check that emp2 isnt already replacing another emp during that period 
             SELECT @isBusy = @isBusy + COUNT(*)
             FROM Employee_Replace_Employee
-            WHERE Emp2_ID   = @Emp2_ID
-             AND from_date <= @to_date
-              AND to_date   >= @from_date;
+            WHERE Emp2_ID   = @replacement_emp
+              AND Emp1_ID  <> @emp_ID
+              AND from_date <= @end_date
+              AND to_date   >= @start_date;
 
             IF @isBusy > 0
                 SET @status = 'rejected';
@@ -1339,11 +1340,10 @@ AS
              ---check that emp2 isnt already replacing another emp during that period 
             SELECT @isBusy = @isBusy + COUNT(*)
             FROM Employee_Replace_Employee
-            WHERE Emp2_ID   = @Emp2_ID
-              AND from_date <= @to_date
-              AND to_date   >= @from_date;
-            IF @isBusy > 0
-                SET @status = 'rejected';
+            WHERE Emp2_ID   = @replacement_emp
+              AND Emp1_ID  <> @emp_ID
+              AND from_date <= @end_date
+              AND to_date   >= @start_date;
         END
     END
 
@@ -3329,12 +3329,6 @@ values (5,19,'pending') --HR_MET
 insert into Employee_Approve_Leave (Emp1_ID,leave_ID,status)
 values (5,20,'pending') --HR_MET
 ------------------------------------------------------
-
-
-
-
-
-
 
 
 

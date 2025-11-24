@@ -453,6 +453,20 @@ END
      END
      go
 
+--farida helper function 
+CREATE FUNCTION get_hr_rep_for_emp(@employee_ID INT ) RETURNS INT   -- getting hr rep id for a dep 
+AS
+BEGIN 
+DECLARE @HRrep INT;
+   DECLARE @dep VARCHAR(50) =  dbo.getDep(@employee_ID) ;
+   SELECT TOP 1 @HRrep = E.employee_ID 
+    FROM Employee E 
+    INNER JOIN Employee_Role R ON E.employee_ID = R.emp_ID
+    WHERE R.role_name = ('HR_Representative_' + @dep) 
+RETURN @HRrep
+END
+GO
+
 --2.2)a)
 GO
 CREATE VIEW allEmployeeProfiles
@@ -2008,44 +2022,59 @@ CREATE PROC Submit_medical
 as 
 
 DECLARE @get_req_id int;
-DECLARE @HRrep_id INT;
-DECLARE @employee_dep VARCHAR(50);
+DECLARE @HRrep_id INT = dbo.HR_rep(@employee_ID);
+DECLARE @employee_dep VARCHAR(50)= dbo.getDep(@employee_ID);
 DECLARE @medical_dr_id INT;
+DECLARE @check bit;
 
-INSERT INTO Leave (date_of_request, start_date, end_date)
+INSERT INTO Leave (date_of_request, start_date, end_date)  --insert into leave 
 VALUES (CURRENT_TIMESTAMP, @start_date, @end_date);
 
-SET @get_req_id= SCOPE_IDENTITY();
+SET @get_req_id= SCOPE_IDENTITY();       --get req id
 
-INSERT INTO Medical_Leave (request_ID, insurance_status, disability_details, type, Emp_ID)
+INSERT INTO Medical_Leave (request_ID, insurance_status, disability_details, type, Emp_ID)    --insert into medical 
 VALUES (@get_req_id, @insurance_status, @disability_details, @type, @employee_ID);
 
-INSERT INTO Document (type, description, file_name , creation_date, expiry_date, status, emp_ID,medical_ID, unpaid_ID)
+INSERT INTO Document (type, description, file_name , creation_date, expiry_date, status, emp_ID,medical_ID, unpaid_ID)   --insert into doc
 VALUES ('Medical', @document_description, @file_name, CURRENT_TIMESTAMP, NULL,'valid',@employee_ID, @get_req_id, NULL);
 
 SELECT TOP 1 @medical_dr_id = E.employee_ID
 FROM Employee E INNER JOIN Employee_Role R ON (E.employee_ID = R.emp_ID)
 WHERE E.employment_status = 'active'AND R.role_name= 'Medical Doctor'; 
 
-SELECT @employee_dep = E.dept_name
-FROM Employee E
-WHERE E.employee_ID = @employee_ID;
+    IF @HRrep_id IS NULL
+    BEGIN
+        DECLARE @HRrep_valid_id int = dbo.get_hr_rep_for_emp(@employee_id)  -- get the hr id that is on leave 
+        SELECT @HRrep_id = RE.Emp2_ID 
+        FROM Employee_Replace_Employee RE 
+        WHERE @HRrep_valid_id = RE.Emp1_ID AND RE.from_date <= CURRENT_TIMESTAMP AND RE.to_date >= CURRENT_TIMESTAMP    --- get the employee id who replaces him 
+END 
 
-SELECT TOP 1 @HRrep_id = E.employee_ID 
-FROM Employee E INNER JOIN Employee_Role R ON (E.employee_ID= R.emp_ID)
-WHERE R.role_name = ('HR_Representative_'+ @employee_dep) AND E.employment_status='active';
 
-	IF @HRrep_id IS NULL
-BEGIN
-    SELECT TOP 1 @HRrep_id = E.employee_ID
-    FROM Employee E INNER 
-    JOIN Employee_Role R ON R.emp_ID = E.employee_ID
-    WHERE R.role_name LIKE 'HR_Representative_%'
-      AND E.employment_status = 'active';
-END
+if EXISTS (
+SELECT *
+FROM Employee E INNER JOIN Employee_Role R ON (E.employee_ID = R.emp_ID)
+WHERE R.role_name LIKE 'HR_representative_%' AND E.employee_ID = @employee_ID ) 
+    SET @check = 1
+ELSE 
+    SET @check =0
 
-INSERT INTO Employee_Approve_Leave (Emp1_ID , Leave_ID , status)
-VALUES (@HRrep_id , @get_req_id, 'pending');
+
+
+ if @check =0
+
+    INSERT INTO Employee_Approve_Leave (Emp1_ID , Leave_ID , status)
+    VALUES (@HRrep_id , @get_req_id, 'pending');
+else 
+    BEGIN 
+    DECLARE @hr_manager_id int;
+    SELECT TOP 1 @hr_manager_id = R.emp_ID
+    FROM Employee_Role R 
+    WHERE R.role_name ='HR Manager'
+
+     INSERT INTO Employee_Approve_Leave (Emp1_ID , Leave_ID , status)
+    VALUES (@hr_manager_id , @get_req_id, 'pending');
+END 
 
 INSERT INTO Employee_Approve_Leave (Emp1_ID , Leave_ID , status)
 VALUES (@medical_dr_id , @get_req_id, 'pending');
@@ -2062,12 +2091,11 @@ CREATE PROC Submit_unpaid
 @file_name varchar(50)
 as
 
-DECLARE @employee_dep VARCHAR(50);
-DECLARE @HRrep_id INT;
+DECLARE @employee_dep VARCHAR(50)= dbo.getDep(@employee_ID);
+DECLARE @HRrep_id INT = dbo.HR_rep(@employee_ID);
 DECLARE @get_req_id int;
 DECLARE @president_id int;
 DECLARE @HR_manager_id int;
-DECLARE @higher_rank_emp_id int ;
 DECLARE @emp_rank int ;
 DECLARE @check bit;
 
@@ -2083,10 +2111,6 @@ INSERT INTO Document (type, description, file_name, creation_date, expiry_date, 
 VALUES ('Memo', @document_description, @file_name, CURRENT_TIMESTAMP, NULL, 'valid', @employee_ID, null, @get_req_id);
 
 --Employee_Role (emp_ID int (FK), role_name varchar(50) (FK))
-
-SELECT @employee_dep = E.dept_name 
-FROM Employee E 
-WHERE E.employee_ID = @employee_ID;
 
 IF exists (
 SELECT *
@@ -2104,17 +2128,13 @@ WHERE R.role_name = 'President';
 
 IF @check=1 
 BEGIN 
-	SELECT TOP 1 @HRrep_id = E.employee_ID 
-	FROM Employee E INNER JOIN Employee_Role R ON (E.employee_ID= R.emp_ID)
-	WHERE R.role_name = ('HR_Representative_'+ @employee_dep) AND E.employment_status='active';
 
 	IF @HRrep_id IS NULL
 BEGIN
-    SELECT TOP 1 @HRrep_id = E.employee_ID
-    FROM Employee E INNER 
-    JOIN Employee_Role R ON R.emp_ID = E.employee_ID
-    WHERE R.role_name LIKE 'HR_Representative_%'
-      AND E.employment_status = 'active';
+        DECLARE @HRrep_valid_id1 int = dbo.get_hr_rep_for_emp(@employee_id)  -- get the hr id that is on leave 
+        SELECT @HRrep_id = RE.Emp2_ID 
+        FROM Employee_Replace_Employee RE 
+        WHERE @HRrep_valid_id1 = RE.Emp1_ID AND RE.from_date <= CURRENT_TIMESTAMP AND RE.to_date >= CURRENT_TIMESTAMP   --- get the employee id who replaces him 
 END
 
 
@@ -2144,11 +2164,10 @@ BEGIN
 
 		IF @HRrep_id IS NULL
 BEGIN
-    SELECT TOP 1 @HRrep_id = E.employee_ID
-    FROM Employee E INNER 
-    JOIN Employee_Role R ON R.emp_ID = E.employee_ID
-    WHERE R.role_name LIKE 'HR_Representative_%'
-      AND E.employment_status = 'active';
+        DECLARE @HRrep_valid_id int = dbo.get_hr_rep_for_emp(@employee_id)  -- get the hr id that is on leave 
+        SELECT @HRrep_id = RE.Emp2_ID 
+        FROM Employee_Replace_Employee RE 
+        WHERE @HRrep_valid_id = RE.Emp1_ID AND RE.from_date <= CURRENT_TIMESTAMP AND RE.to_date >= CURRENT_TIMESTAMP   --- get the employee id who replaces him 
 END
 
 	INSERT INTO Employee_Approve_Leave (Emp1_ID , Leave_ID , status)
@@ -2160,10 +2179,12 @@ END
 	FROM Employee E inner join Employee_Role ER ON (E.employee_ID = ER.emp_ID)INNER JOIN Role R ON (ER.role_name = R.role_name)
 	WHERE  E.employee_id = @employee_ID ;
 
-	SELECT TOP 1 @higher_rank_emp_id = E.employee_ID
-	FROM  Employee E INNER JOIN Employee_Role ER ON (E.employee_ID = ER.emp_ID)INNER JOIN Role R ON (ER.role_name = R.role_name)
-	WHERE E.employment_status = 'active' AND R.rank < @emp_rank AND E.employee_ID <> @president_id AND E.employee_ID <> @HRrep_id
-    AND E.employee_ID <> @employee_ID;
+	--SELECT TOP 1 @higher_rank_emp_id = E.employee_ID
+	--fROM  Employee E INNER JOIN Employee_Role ER ON (E.employee_ID = ER.emp_ID)INNER JOIN Role R ON (ER.role_name = R.role_name)
+	--WHERE E.employment_status = 'active' AND R.rank < @emp_rank AND E.employee_ID <> @president_id AND E.employee_ID <> @HRrep_id
+    --AND E.employee_ID <> @employee_ID;
+
+    DECLARE @higher_rank_emp_id INT = dbo.get_Higher_Dean(@emp_rank,@employee_dep)
 
 	INSERT INTO Employee_Approve_Leave (Emp1_ID , Leave_ID , status)
 	VALUES (@higher_rank_emp_id, @get_req_id, 'pending');  --Higher ranking employee 
@@ -2194,6 +2215,18 @@ SELECT *
 FROM Unpaid_Leave UL
 WHERE UL.request_ID = @request_ID);
 
+--rejecting 
+UPDATE Employee_Approve_Leave
+    SET status = 'rejected'
+    WHERE Leave_ID = @request_ID
+      AND Emp1_ID = @Upperboard_ID
+      AND status = 'pending'  
+      AND NOT EXISTS (
+            SELECT *
+            FROM Document D
+            WHERE D.unpaid_ID = @request_ID AND D.type = 'Memo' AND D.status = 'valid'
+      );
+
 GO 
 
 --2.5)n) 
@@ -2206,9 +2239,10 @@ CREATE PROC  Submit_compensation
 @date_of_original_workday date, 
 @replacement_emp int
 as
-DECLARE @HRrep_id int;
-DECLARE @employee_departement VARCHAR (50);
+DECLARE @HRrep_id int= dbo.HR_rep(@employee_ID);
+DECLARE @employee_departement VARCHAR (50)  = dbo.getDep(@employee_ID);
 DECLARE @get_req_id int;
+DECLARE @check bit;
 
 INSERT INTO Leave (date_of_request, start_date, end_date)
 VALUES(CURRENT_TIMESTAMP, @compensation_date, @compensation_date);
@@ -2216,23 +2250,40 @@ VALUES(CURRENT_TIMESTAMP, @compensation_date, @compensation_date);
 --how to get the req_id of the leave? scope_identity is allowed
 SET @get_req_id= SCOPE_IDENTITY();
 
-
 INSERT INTO Compensation_Leave (request_ID, reason, date_of_original_workday, emp_ID, replacement_emp)
 VALUES (@get_req_id, @reason, @date_of_original_workday, @employee_ID, @replacement_emp);
 
-INSERT INTO Employee_Replace_Employee
-VALUES (@employee_ID, @replacement_emp, @compensation_date,@compensation_date);
+if EXISTS (
+SELECT *
+FROM Employee E INNER JOIN Employee_Role R ON (E.employee_ID = R.emp_ID)
+WHERE R.role_name LIKE 'HR_representative_%' AND E.employee_ID = @employee_ID ) 
+    SET @check = 1
+ELSE 
+    SET @check =0
 
-SELECT @employee_departement = E.dept_name
-FROM Employee E
-WHERE E.employee_ID = @employee_ID;
 
-SELECT TOP 1 @HRrep_id = E.employee_ID 
-FROM Employee E INNER JOIN Employee_Role R ON (E.employee_ID= R.emp_ID)
-WHERE R.role_name = ('HR_Representative_'+ @employee_departement) AND E.employment_status='active';
+IF @HRrep_id IS NULL
+BEGIN
+        DECLARE @HRrep_valid_id int = dbo.get_hr_rep_for_emp(@employee_id)  -- get the hr id that is on leave 
+        SELECT @HRrep_id = RE.Emp2_ID 
+        FROM Employee_Replace_Employee RE 
+        WHERE @HRrep_valid_id = RE.Emp1_ID AND RE.from_date <= CURRENT_TIMESTAMP AND RE.to_date >= CURRENT_TIMESTAMP    --- get the employee id who replaces him 
+END
 
-INSERT INTO Employee_Approve_Leave (Emp1_ID , Leave_ID , status)
-VALUES (@HRrep_id , @get_req_id, 'pending');
+if @check =0
+
+    INSERT INTO Employee_Approve_Leave (Emp1_ID , Leave_ID , status)
+    VALUES (@HRrep_id , @get_req_id, 'pending');
+else 
+    BEGIN 
+    DECLARE @hr_manager_id int;
+    SELECT TOP 1 @hr_manager_id = R.emp_ID
+    FROM Employee_Role R 
+    WHERE R.role_name ='HR Manager'
+
+     INSERT INTO Employee_Approve_Leave (Emp1_ID , Leave_ID , status)
+    VALUES (@hr_manager_id , @get_req_id, 'pending');
+END 
 
 
 
@@ -2248,6 +2299,11 @@ as
 INSERT INTO Performance
 VALUES (@rating, @comment, @semester, @employee_ID);
 GO 
+
+
+
+
+
 
 
 

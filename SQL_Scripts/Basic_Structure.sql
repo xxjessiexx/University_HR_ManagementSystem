@@ -648,15 +648,16 @@ GO
 --2.3(h)
 GO
 CREATE PROC Remove_Holiday
-as
+AS
 BEGIN
-    DELETE Attend
-    FROM Attendance Attend
-    INNER JOIN Holiday H
-    ON Attend.date >= H.from_date 
-   AND Attend.date <= H.to_date;
+    DELETE 
+    FROM Attendance 
+    WHERE Attendance.attendance_ID IN (SELECT Attendance.attendance_ID FROM Attendance INNER JOIN Holiday H
+    ON Attendance.date >= H.from_date
+    AND Attendance.date <= H.to_date);
+    
 END;
-GO
+go
 
 --2.3 (i)
 GO
@@ -1767,7 +1768,7 @@ CREATE FUNCTION Deductions_Attendance
 (
  SELECT D.emp_ID,D.date,D.amount,D.type,D.status,D.unpaid_ID,D.attendance_ID
 FROM Deduction as D
- WHERE Deduction.emp_ID=@employee_ID AND month (D.date)=@month AND 
+ WHERE D.emp_ID=@employee_ID AND month (D.date)=@month AND 
  D.type in ('missing_hours', 'missing_days')
  )
 GO;

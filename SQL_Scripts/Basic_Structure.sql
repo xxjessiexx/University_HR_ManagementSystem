@@ -201,11 +201,12 @@ CHECK (rating BETWEEN 1 AND 5)
 ) ;
 
 CREATE TABLE Employee_Replace_Employee (
+Table_ID int IDENTITY(1,1),
 Emp1_ID int ,
 Emp2_ID int ,
 from_date date, 
 to_date date,
-PRIMARY KEY (Emp1_ID, Emp2_ID),
+PRIMARY KEY (Table_ID, Emp1_ID, Emp2_ID),
 FOREIGN KEY (Emp1_ID) REFERENCES Employee (Employee_ID),
 FOREIGN KEY (Emp2_ID) REFERENCES Employee (Employee_ID)
 );
@@ -246,7 +247,7 @@ AS
     DROP TABLE Department;
     DROP TABLE IF EXISTS Holiday; -- do i need to drop holiday table?? YES
 GO
- exec dropAllTables
+ 
 
  --2.1(d)
 GO
@@ -568,10 +569,6 @@ BEGIN
     END
 END
 GO
-EXEC  Update_Employment_Status ;
-
-
-GO
 
 
 --2.3(d)
@@ -734,21 +731,33 @@ CREATE PROC Replace_employee
     @to_date   DATE
 AS
     DECLARE
-        @isBusy INT;
+        @isBusy    INT,
+        @exists1   INT,
+        @exists2   INT;
+
     SET @isBusy = 0;
-    -- 1) Basic validation--------------
+
+    -- Validate both employees exist -------------------------
+    SELECT @exists1 = COUNT(*) FROM Employee WHERE employee_ID = @Emp1_ID;
+    SELECT @exists2 = COUNT(*) FROM Employee WHERE employee_ID = @Emp2_ID;
+
+    IF @exists1 = 0 OR @exists2 = 0
+        RETURN;  -- one (or both) employees don’t exist
+    -- Basic validation --------------------------------------
     IF @Emp1_ID = @Emp2_ID
-        RETURN;
-    -- Invalid date range
+        RETURN;  -- cannot replace yourself
+
     IF @from_date IS NULL OR @to_date IS NULL OR @from_date > @to_date
-        RETURN;
+        RETURN;  -- invalid date range
+
+    --  Check that Emp2 is NOT on approved leave in interval
     SELECT @isBusy = @isBusy + COUNT(*)
-    FROM Leave L
-    LEFT OUTER JOIN Annual_Leave       AL ON AL.request_ID = L.request_ID
-    LEFT OUTER JOIN Accidental_Leave   AC ON AC.request_ID = L.request_ID
-    LEFT OUTER JOIN Medical_Leave      ML ON ML.request_ID = L.request_ID
-    LEFT OUTER JOIN Unpaid_Leave       UL ON UL.request_ID = L.request_ID
-    LEFT OUTER JOIN Compensation_Leave CL ON CL.request_ID = L.request_ID
+    FROM [Leave] L
+    LEFT JOIN Annual_Leave       AL ON AL.request_ID = L.request_ID
+    LEFT JOIN Accidental_Leave   AC ON AC.request_ID = L.request_ID
+    LEFT JOIN Medical_Leave      ML ON ML.request_ID = L.request_ID
+    LEFT JOIN Unpaid_Leave       UL ON UL.request_ID = L.request_ID
+    LEFT JOIN Compensation_Leave CL ON CL.request_ID = L.request_ID
     WHERE L.final_approval_status = 'approved'
       AND L.start_date <= @to_date
       AND L.end_date   >= @from_date
@@ -759,9 +768,16 @@ AS
          OR UL.emp_ID = @Emp2_ID
          OR CL.emp_ID = @Emp2_ID
       );
+    -- 3) Check that Emp2 is NOT already replacing someone else in an overlapping period
+  
+    SELECT @isBusy = @isBusy + COUNT(*)
+    FROM Employee_Replace_Employee ERE
+    WHERE ERE.Emp2_ID   = @Emp2_ID
+      AND ERE.from_date <= @to_date
+      AND ERE.to_date   >= @from_date;
 
     IF @isBusy > 0
-        RETURN;
+        RETURN;   -- Emp2 is busy (on leave or already replacing)
     INSERT INTO Employee_Replace_Employee (Emp1_ID, Emp2_ID, from_date, to_date)
     VALUES (@Emp1_ID, @Emp2_ID, @from_date, @to_date);
 GO
@@ -851,7 +867,7 @@ AS
 
     SELECT @prevRejected = COUNT(*)
     FROM Employee_Approve_Leave
-    WHERE Leave_ID = @request_ID
+    WHERE Leave_ID = @request_ID AND Emp1_ID <> @HR_ID
       AND status   = 'rejected';
 
     IF @prevRejected > 0
@@ -908,6 +924,12 @@ END
                  OR UL.emp_ID = @replacement_emp
                  OR CL.emp_ID = @replacement_emp
               );
+             ---check that emp2 isnt already replacing another emp during that period 
+            SELECT @isBusy = @isBusy + COUNT(*)
+            FROM Employee_Replace_Employee
+            WHERE Emp2_ID   = @Emp2_ID
+             AND from_date <= @to_date
+              AND to_date   >= @from_date;
 
             IF @isBusy > 0
                 SET @status = 'rejected';
@@ -927,7 +949,7 @@ END
         BEGIN
             IF @num_days = 1
                AND @accidental_balance >= 1
-               AND DATEDIFF(DAY, @date_of_request, CasT(GETDATE() as DATE)) <= 2
+               AND DATEDIFF(DAY, @date_of_request, CAST(GETDATE() as DATE)) <= 2
                 SET @status = 'approved';
             ELSE
                 SET @status = 'rejected';
@@ -966,6 +988,9 @@ END
             UPDATE Employee
             SET annual_balance = annual_balance - @num_days
             WHERE employee_ID = @emp_ID;
+
+            INSERT INTO Employee_Replace_Employee (Emp1_ID, Emp2_ID, from_date, to_date)
+            VALUES (@emp_ID, @replacement_emp, @start_date, @end_date);
         END
         ELSE IF @leave_type = 'accidental'
         BEGIN
@@ -973,8 +998,7 @@ END
             SET accidental_balance = accidental_balance - 1
             WHERE employee_ID = @emp_ID;
         END
-    END
-    
+    END   
 GO
 
 --2.4(c)-
@@ -997,6 +1021,7 @@ AS
     SET @status        = NULL;
     SET @prevRejected  = 0;
     SET @pendinGOthers = 0;
+    SET @approvedUnpaidThisYear=0;
 
     SELECT @emp_ID = emp_ID
     FROM Unpaid_Leave
@@ -1006,7 +1031,7 @@ AS
     BEGIN
         SET @status = 'rejected';
 
-            -- If HR already has an entry, update it; otherwise insert a new one
+     -- If HR already has an entry, update it; otherwise insert a new one
     IF EXISTS (
         SELECT 1 
         FROM Employee_Approve_Leave
@@ -1048,7 +1073,7 @@ AS
     -- If previously rejected, keep it rejected
     SELECT @prevRejected = COUNT(*)
     FROM Employee_Approve_Leave
-    WHERE Leave_ID = @request_ID
+    WHERE Leave_ID = @request_ID AND Emp1_ID <> @HR_ID
       AND status   = 'rejected';
 
     IF @prevRejected > 0
@@ -1077,7 +1102,7 @@ AS
         SELECT @approvedUnpaidThisYear = COUNT(*)
         FROM Unpaid_Leave UL
         JOIN [Leave] L ON UL.request_ID = L.request_ID
-        WHERE UL.emp_ID = @emp_ID
+        WHERE UL.emp_ID = @emp_ID AND L.request_ID <> @request_ID
           AND L.final_approval_status = 'approved'
           AND YEAR(L.start_date) = YEAR(@start_date);
 
@@ -1170,7 +1195,7 @@ AS
     BEGIN
         SET @status = 'rejected';
 
-            -- If HR already has an entry, update it; otherwise insert a new one
+         -- If HR already has an entry, update it; otherwise insert a new one
     IF EXISTS (
         SELECT 1 
         FROM Employee_Approve_Leave
@@ -1205,7 +1230,7 @@ AS
 
     SELECT @prevRejected = COUNT(*)
     FROM Employee_Approve_Leave
-    WHERE Leave_ID = @request_ID
+    WHERE Leave_ID = @request_ID AND Emp1_ID <> @HR_ID
       AND status   = 'rejected';
 
     IF @prevRejected > 0
@@ -1250,7 +1275,7 @@ AS
         END
     END
 
-    -- 7) Check same-month condition: request vs original workday--
+    --  Check same-month condition: request vs original workday--
     IF @status IS NULL
     BEGIN
         IF NOT (YEAR(@date_of_request) = YEAR(@date_of_original_workday)
@@ -1259,7 +1284,7 @@ AS
             SET @status = 'rejected';
         END
     END
-    -- 8) Compensation day must also be in the same month--------
+    -- Compensation day must also be in the same month--------
     IF @status IS NULL
     BEGIN
         IF NOT (YEAR(@start_date) = YEAR(@date_of_original_workday)
@@ -1268,7 +1293,7 @@ AS
             SET @status = 'rejected';
         END
     END
-    -- 9) Check replacement employee availability---
+    -- Check replacement employee availability---
     IF @status IS NULL
     BEGIN
         IF @replacement_emp IS NULL
@@ -1296,7 +1321,12 @@ AS
                  OR UL.emp_ID = @replacement_emp
                  OR CL.emp_ID = @replacement_emp
               );
-
+             ---check that emp2 isnt already replacing another emp during that period 
+            SELECT @isBusy = @isBusy + COUNT(*)
+            FROM Employee_Replace_Employee
+            WHERE Emp2_ID   = @Emp2_ID
+              AND from_date <= @to_date
+              AND to_date   >= @from_date;
             IF @isBusy > 0
                 SET @status = 'rejected';
         END
@@ -1332,6 +1362,13 @@ AS
     UPDATE [Leave]
     SET final_approval_status = @status
     WHERE request_ID = @request_ID;
+    --populate Employee_Replace_Employee since leave approved
+    IF @status = 'approved'
+    BEGIN
+        INSERT INTO Employee_Replace_Employee (Emp1_ID, Emp2_ID, from_date, to_date)
+        VALUES (@emp_ID, @replacement_emp, @start_date, @end_date);
+           
+    END
 GO
 
 ---2.4(e)---
@@ -1407,7 +1444,7 @@ AS
     SET @missingHours = @totalMissingMinutes / 60.0;
     SET @amount       = @rate_per_hour * @missingHours;
 
-    INSERT INTO Deduction (emp_ID, [date], amount, type, unpaid_ID, attendance_ID)
+    INSERT INTO Deduction (emp_ID, date, amount, type, unpaid_ID, attendance_ID)
     VALUES (@employee_ID, @first_missing_date, @amount, 'missing_hours', NULL, @first_attendance_id);
  GO
 

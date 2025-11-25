@@ -269,6 +269,18 @@ AS
     DROP FUNCTION Deductions_Attendance;
     DROP FUNCTION Is_On_Leave;
     DROP FUNCTION Status_leaves;
+    drop function if exists Deduction_per_day
+    drop function if exists type_contract
+    drop function if exists getRole
+    drop function if exists getDep
+    drop function if exists HR_rep
+    drop function if exists getDeans
+    drop function if exists get_President
+    drop function if exists get_HR_Manager
+    drop function if exists CalculateDays
+    drop function if exists Calc_Salary
+    drop function if exists get_hr_rep_for_emp
+
     -- DROP ALL STORED PROCEDURES-----
     DROP PROC createAllTables;
     DROP PROC dropAllTables;
@@ -327,9 +339,7 @@ AS
     TRUNCATE TABLE Department;
 GO
 -- YASMIN'S HELPER FNS
--- helper function that checks ur contract type
-  -- helper function to calculate deduced amount based on days 
-go
+   go
   CREATE FUNCTION Deduction_per_day
   (@employee_ID int)
      returns decimal (10,2)
@@ -486,7 +496,7 @@ BEGIN
     RETURN @days;
 END;
 GO
--- helper function to calculate salary
+
 CREATE FUNCTION Calc_Salary (@employee_ID int)
 returns decimal (10,2)
 AS
@@ -514,19 +524,6 @@ SELECT TOP 1
       return @salary
 end
 go    
---farida helper function 
-CREATE FUNCTION get_hr_rep_for_emp(@employee_ID INT ) RETURNS INT   -- getting hr rep id for a dep 
-AS
-BEGIN 
-DECLARE @HRrep INT;
-   DECLARE @dep VARCHAR(50) =  dbo.getDep(@employee_ID) ;
-   SELECT TOP 1 @HRrep = E.employee_ID 
-    FROM Employee E 
-    INNER JOIN Employee_Role R ON E.employee_ID = R.emp_ID
-    WHERE R.role_name = ('HR_Representative_' + @dep) 
-RETURN @HRrep
-END
-GO
 
 --2.2)a)
 GO
@@ -719,7 +716,7 @@ END
 GO
 
 
---EXEC Update_Attendance; NEEDS PARAMETERS
+
 
 --2.3(h)
 GO
@@ -873,7 +870,7 @@ ON E.employee_ID = R.emp_ID
 WHERE E.employee_ID= @employee_ID AND
 E.password= @password AND
 e.dept_name like '%HR%'
-AND E.employment_status='active') --do i need to make sure he is active??
+AND E.employment_status <> 'resigned') 
 
 set @success=1
 else
@@ -1547,7 +1544,6 @@ AS
 
 -- 2.4)g) yasmin Add deduction due to unpaid leave.
 
--- helper function that returns the number of days in this month
 GO
 CREATE PROC Deduction_unpaid 
     @employee_ID INT
@@ -1730,12 +1726,13 @@ CREATE FUNCTION EmployeeLoginValidation
 RETURNS BIT
 as
 BEGIN
-    DECLARE @success BIT = 0;  -- default false
+    DECLARE @success BIT = 0; 
 
     SELECT @success = 1
     FROM Employee
     WHERE employee_ID = @employee_ID
-      AND password = @password;
+      AND password = @password
+      and employment_status  <> 'resigned';
 
     RETURN @success;
 END
@@ -1892,7 +1889,8 @@ end
 
 
 go
---2.5)G) yasmin Apply for an annual leave     !!!  WORK IN PROGRESS  !!!
+
+--2.5)G) yasmin Apply for an annual leave   
 CREATE PROC Submit_annual
 @employee_ID int,
 @replacement_emp int,
@@ -1900,12 +1898,23 @@ CREATE PROC Submit_annual
 @end_date date
 as
 BEGIN
+
+   if(not exists (select * from Employee E where E.employee_ID = @replacement_emp ) OR
+   not exists (select * from Employee E where E.employee_ID = @employee_ID )) -- the employees do not exist
+   begin
+   return;
+   end
+
     declare @contract_type varchar(50) = dbo.type_contract (@employee_ID );
     declare @role varchar(50) = dbo.getRole(@employee_ID);
     declare @dep varchar(50) = dbo.getDep(@employee_ID );
     declare @HR int = dbo.HR_rep(@employee_ID ); 
     DECLARE @id INT;
-    if (@contract_type <> 'part_time')
+    DECLARE @ApproverID INT;
+    if (@contract_type = 'part_time') 
+    begin
+    return;
+    end
 
     begin
     --1) insert into leave  DONE
@@ -1917,43 +1926,37 @@ BEGIN
     --2) insert into annual leave DONE
     INSERT INTO Annual_Leave (request_ID, emp_ID,replacement_emp)
     VALUES (@id, @employee_ID,@replacement_emp);
-      --3) insert into employee approves request for hr rep DONE
-      -- Employee_Approve_Leave (Emp1_ID int (FK), Leave_ID int (FK), status: varchar (50))
-
-      IF @HR IS NOT NULL 
-        INSERT INTO Employee_Approve_Leave VALUES (@HR, @id, 'pending'); --SAME DEP
 
 
-    if (@role in ('Vice Dean','Dean'))
+
+    if (@role in ('Vice Dean','Dean'))   
     begin
     -- insert into emp app req for 'higher rank'
-    declare @higherD int = dbo.get_Higher_Dean(@employee_ID ,@dep); --PRESIDENT
-    IF @higherD  IS NOT NULL 
-          INSERT INTO Employee_Approve_Leave VALUES (@higherD, @id, 'pending')
-
+    SET @ApproverID = dbo.get_President();
+    IF @ApproverID IS NOT NULL 
+          INSERT INTO Employee_Approve_Leave VALUES (@ApproverID, @id, 'pending')
+    IF @HR IS NOT NULL 
+       INSERT INTO Employee_Approve_Leave(Emp1_ID, Leave_ID, status) VALUES (@HR, @id, 'pending');
     end
-        else 
+        else if (@role LIKE 'HR%Representative%')  
         begin
-        if (@role like 'HR%') --HR REP ONLY NEED MANAGER
-        begin
-        --insert into emp app req for 'higher rank in hr' | WHAT IF AN HR MANAGER WANTS TO SUBMIT THE LEAVE WHO'S THE HIGHER RANK???
-          declare @HigherHR int = dbo.get_Higher_HR(@employee_ID ,@dep )
-          INSERT INTO Employee_Approve_Leave VALUES (@HigherHR, @id, 'pending');
+        --insert into emp app req for 'higher rank in hr' 
+          set @ApproverID = dbo.get_HR_Manager();
+          if @ApproverID IS NOT NULL
+          insert into Employee_Approve_Leave(Emp1_ID, Leave_ID, status) VALUES (@ApproverID, @id, 'pending');
         end
         else
         begin
           -- insert into emp app req for normal employees
-          declare @dean int = dbo.get_Dean(@dep);
-          IF @dean  IS NOT NULL 
-          INSERT INTO Employee_Approve_Leave VALUES (@dean, @id, 'pending');  --SAME DEP
+         set @ApproverID = dbo.get_Dean(@dep); 
+         if @ApproverID IS NOT NULL
+         insert into Employee_Approve_Leave(Emp1_ID, Leave_ID, status) VALUES (@ApproverID, @id, 'pending');
+           
+        IF @HR IS NOT NULL
+            INSERT INTO Employee_Approve_Leave(Emp1_ID, Leave_ID, status) VALUES (@HR, @id, 'pending');  
         end
 
       end
-      --EMP1 REP EMP2
-      --insert into Employee_Replace_Employee values (@employee_ID, @replacement_emp, @start_date , @end_date ); -- ONLY WHEN APPROVED
-
-
-    end
 END
 GO
 
@@ -2083,12 +2086,6 @@ BEGIN
     return;
     end
 
-    --IF (@duration_days <> 1)
-    --BEGIN
-      --  PRINT 'Accidental leave duration must be exactly 1 day.';
-       -- RETURN;
-   -- END
-
     --insert into leave
     INSERT INTO Leave (date_of_request, start_date, end_date)
     VALUES(CURRENT_TIMESTAMP, @start_date, @end_date);
@@ -2099,7 +2096,7 @@ BEGIN
     INSERT INTO Accidental_Leave (request_ID, emp_ID)
     VALUES (@get_req_id, @employee_ID)
 
-    if(@role like 'HR%Representative%') -- IF HR EMPLOYEE THEN HR MANAGER??
+    if(@role like 'HR%Representative%') 
     begin
      DECLARE @HRmanager INT = dbo.get_HR_Manager(); 
      SET @ApproverID = @HRmanager;

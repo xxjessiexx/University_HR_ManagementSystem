@@ -1685,7 +1685,7 @@ begin
     DECLARE @Bonus decimal (10,2);
     DECLARE @totalDeductions decimal (10,2);
     DECLARE @final_salary_amount decimal (10,1);
-
+    DECLARE @Payroll_Comment varchar (150);
    
     set @Bonus = dbo.Bonus_amount (@employee_ID);
 
@@ -2016,10 +2016,10 @@ BEGIN
  
     if ( @role <> 'President' AND @role NOT LIKE 'Vice%Dean' AND @role <> 'Dean' ) 
     begin 
-    return; 
+    return 
     end;
 
-    select @employee_ID = l.employee_ID , @from = l.start_date,@to = l.end_date --gets the start and end dates
+    select @employee_ID = a.emp_ID , @from = l.start_date,@to = l.end_date --gets the start and end dates
     from leave l inner join Annual_Leave a on l.request_ID = a.request_ID
     where l.request_ID = @request_ID and status = 'pending';
 

@@ -890,17 +890,7 @@ AS
         SET @status = 'rejected';
     END
 
-IF @status IS NULL AND @leave_type = 'annual'
-BEGIN
-    SELECT @pendingHigher = COUNT(*)
-        FROM Employee_Approve_Leave
-        WHERE Leave_ID = @request_ID
-          AND Emp1_ID <> @HR_ID
-          AND status = 'pending';
 
-        IF @pendingHigher > 0
-            RETURN;
-END
     IF @status IS NULL AND @leave_type = 'annual'
     BEGIN
         IF @type_of_contract = 'part_time'
@@ -975,6 +965,14 @@ END
             SET @status = 'rejected';
         END
     END
+    SELECT @pendingHigher = COUNT(*)
+        FROM Employee_Approve_Leave
+        WHERE Leave_ID = @request_ID
+          AND Emp1_ID <> @HR_ID
+          AND status = 'pending';
+
+        IF @pendingHigher > 0
+            RETURN;
         -- If HR already has an entry, update it; otherwise insert a new one
     IF EXISTS (
         SELECT 1 
@@ -1016,6 +1014,7 @@ END
         END
     END   
 GO
+
 
 --2.4(c)-
 GO
@@ -1097,20 +1096,7 @@ AS
         SET @status = 'rejected';
     END
 
-    -- 2) If any other approver still pending, HR will not take an action
-    IF @status IS NULL
-    BEGIN
-        SELECT @pendinGOthers = COUNT(*)
-        FROM Employee_Approve_Leave
-        WHERE Leave_ID = @request_ID
-          AND Emp1_ID <> @HR_ID
-          AND status = 'pending';
-
-        IF @pendinGOthers > 0
-        BEGIN
-            RETURN;
-        END
-    END
+    
 
     -- Check if employee already has an approved unpaid leave this year
     IF @status IS NULL
@@ -1138,11 +1124,22 @@ AS
         ELSE
         BEGIN
             IF @annual_balance = 0 AND @num_days <= 30
+            begin
                 SET @status = 'approved';
+                SELECT @pendinGOthers = COUNT(*)
+                FROM Employee_Approve_Leave
+                WHERE Leave_ID = @request_ID
+                  AND Emp1_ID <> @HR_ID
+                  AND status = 'pending';
+
+                IF @pendinGOthers > 0
+                    RETURN;
+            end
             ELSE
                 SET @status = 'rejected';
         END
     END
+    
         -- If HR already has an entry, update it; otherwise insert a new one
     IF EXISTS (
         SELECT 1 
@@ -1442,7 +1439,7 @@ AS
 
     IF @totalMissingMinutes IS NULL OR @totalMissingMinutes <= 0
         RETURN;
-    -- 4) Get FIRST day with missing hours (month)----------
+    -- Get FIRST day with missing hours (month)----------
     SELECT TOP 1
         @first_attendance_id = attendance_ID,
         @first_missing_date  = [date]
@@ -2663,7 +2660,7 @@ insert into Employee (first_name,last_name,email,
 password,address,gender,official_day_off,years_of_experience,
 national_ID,employment_status, type_of_contract,emergency_contact_name,
 emergency_contact_phone,annual_balance,accidental_balance,hire_date,
-last_working_day,dept_name)
+last_working_date,dept_name)
 values  ('Jack','John','jack.john@guc.edu.eg','123','new cairo',
 'M','Saturday',0,'1234567890123456','active','full_time',
 'Sarah','01234567892',

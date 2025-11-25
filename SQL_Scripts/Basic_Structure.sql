@@ -35,7 +35,7 @@ salary decimal(10,2),
 hire_date date, 
 last_working_date date, 
 dept_name varchar (50),
-FOREIGN KEY (dept_name) REFERENCES Department(name),
+FOREIGN KEY (dept_name) REFERENCES Department(name) on update cascade,
 CHECK (employment_status in ('active', 'onleave', 'notice_period', 'resigned')),
 CHECK (type_of_contract in ('full_time', 'part_time'))
 );
@@ -63,16 +63,16 @@ CREATE TABLE Employee_Role (
 emp_ID int , 
 role_name varchar(50),
 PRIMARY KEY(emp_ID, role_name),
-FOREIGN KEY(emp_ID) REFERENCES Employee(employee_ID),
-FOREIGN KEY(role_name) REFERENCES Role (role_name)
+FOREIGN KEY(emp_ID) REFERENCES Employee(employee_ID) on update cascade,
+FOREIGN KEY(role_name) REFERENCES Role (role_name) on update cascade
 );
 
 CREATE TABLE Role_existsIn_Department (
 department_name VARCHAR(50), 
 Role_name VARCHAR(50),
 PRIMARY KEY(department_name, Role_name),
-FOREIGN KEY (department_name) REFERENCES Department(name),
-FOREIGN KEY (Role_name) REFERENCES Role (role_name)
+FOREIGN KEY (department_name) REFERENCES Department(name) on update cascade,
+FOREIGN KEY (Role_name) REFERENCES Role (role_name) on update cascade
 ) ;
 
 CREATE TABLE Leave (
@@ -90,15 +90,15 @@ CREATE TABLE Annual_Leave (
 request_ID int PRIMARY KEY , 
 emp_ID int , 
 replacement_emp int, 
-FOREIGN KEY (emp_id) REFERENCES Employee(employee_ID),
-FOREIGN KEY (request_ID) REFERENCES Leave (request_ID),
-FOREIGN KEY (replacement_emp) REFERENCES Employee (employee_ID));
+FOREIGN KEY (emp_id) REFERENCES Employee(employee_ID) on update cascade,
+FOREIGN KEY (request_ID) REFERENCES Leave (request_ID) on update cascade,
+FOREIGN KEY (replacement_emp) REFERENCES Employee (employee_ID) on update cascade);
 
 CREATE TABLE Accidental_Leave (
 request_ID int PRIMARY KEY,
 emp_ID int,
-FOREIGN KEY (request_ID) REFERENCES Leave (request_ID),
-FOREIGN KEY (emp_ID) REFERENCES Employee(employee_ID));
+FOREIGN KEY (request_ID) REFERENCES Leave (request_ID) on update cascade,
+FOREIGN KEY (emp_ID) REFERENCES Employee(employee_ID) on update cascade);
 
 CREATE TABLE Medical_Leave (
 request_ID int PRIMARY KEY , 
@@ -106,16 +106,16 @@ insurance_status BIT,
 disability_details varchar (50), 
 type varchar (50), 
 Emp_ID int,
-FOREIGN KEY (request_ID) REFERENCES Leave (request_ID),
-FOREIGN KEY (Emp_ID) REFERENCES Employee(employee_ID),
+FOREIGN KEY (request_ID) REFERENCES Leave (request_ID) on update cascade,
+FOREIGN KEY (Emp_ID) REFERENCES Employee(employee_ID) on update cascade,
 CHECK (type in ('sick', 'maternity'))
 ) ;
 
 CREATE TABLE Unpaid_Leave (
 request_ID int PRIMARY KEY, 
 Emp_ID int, 
-FOREIGN KEY (request_ID) REFERENCES Leave (request_ID),
-FOREIGN KEY (Emp_ID) REFERENCES Employee(employee_ID)
+FOREIGN KEY (request_ID) REFERENCES Leave (request_ID)on update cascade,
+FOREIGN KEY (Emp_ID) REFERENCES Employee(employee_ID) on update cascade
 );
 
 CREATE TABLE Compensation_Leave (
@@ -124,9 +124,9 @@ reason varchar(50),
 date_of_original_workday date, 
 emp_ID int ,
 replacement_emp int,
-FOREIGN KEY (request_ID) REFERENCES Leave(request_ID),
-FOREIGN KEY (emp_ID) REFERENCES Employee(employee_ID),
-FOREIGN KEY (replacement_emp) REFERENCES Employee(employee_ID)
+FOREIGN KEY (request_ID) REFERENCES Leave(request_ID) on update cascade,
+FOREIGN KEY (emp_ID) REFERENCES Employee(employee_ID) on update cascade,
+FOREIGN KEY (replacement_emp) REFERENCES Employee(employee_ID) on update cascade
 );
 
 
@@ -142,9 +142,9 @@ emp_ID int ,
 medical_ID int,
 unpaid_ID int, 
 CHECK(status in ('valid', 'expired') ),
-FOREIGN KEY (emp_ID) REFERENCES Employee(employee_ID),
-FOREIGN KEY (medical_ID) REFERENCES Medical_Leave(request_ID),
-FOREIGN KEY (unpaid_ID) REFERENCES Unpaid_Leave(request_ID)
+FOREIGN KEY (emp_ID) REFERENCES Employee(employee_ID) on update cascade,
+FOREIGN KEY (medical_ID) REFERENCES Medical_Leave(request_ID) on update cascade,
+FOREIGN KEY (unpaid_ID) REFERENCES Unpaid_Leave(request_ID) on update cascade
 );
 
 CREATE TABLE Payroll (
@@ -169,7 +169,7 @@ status varchar (50) DEFAULT 'absent',
 emp_ID int ,
 total_duration AS (DATEDIFF(MINUTE, check_in_time, check_out_time)), 
 CHECK (status in ('absent', 'attended')),
-FOREIGN KEY (emp_ID) REFERENCES Employee(employee_ID)
+FOREIGN KEY (emp_ID) REFERENCES Employee(employee_ID) on update cascade
 ); 
 
 CREATE TABLE Deduction (
@@ -183,9 +183,9 @@ unpaid_ID int ,
 attendance_ID int,
 CHECK(type in ('missing_hours', 'missing_days', 'unpaid')),
 CHECK(status in ('pending', 'finalized')),
-FOREIGN KEY (emp_ID) REFERENCES Employee (employee_ID),
-FOREIGN KEY (unpaid_ID) REFERENCES Unpaid_Leave (request_ID),
-FOREIGN KEY (attendance_ID) REFERENCES Attendance (attendance_ID),
+FOREIGN KEY (emp_ID) REFERENCES Employee (employee_ID)on update cascade,
+FOREIGN KEY (unpaid_ID) REFERENCES Unpaid_Leave (request_ID) on update cascade,
+FOREIGN KEY (attendance_ID) REFERENCES Attendance (attendance_ID) on update cascade,
 PRIMARY KEY(deduction_ID, emp_ID)
 );
 
@@ -195,7 +195,7 @@ rating int,
 comments varchar (50),
 semester char (3), 
 emp_ID int, 
-FOREIGN KEY (emp_ID) REFERENCES Employee(employee_ID),
+FOREIGN KEY (emp_ID) REFERENCES Employee(employee_ID) on update cascade,
 CHECK (rating BETWEEN 1 AND 5)
 ) ;
 
@@ -206,8 +206,8 @@ Emp2_ID int ,
 from_date date, 
 to_date date,
 PRIMARY KEY (Table_ID, Emp1_ID, Emp2_ID),
-FOREIGN KEY (Emp1_ID) REFERENCES Employee (Employee_ID),
-FOREIGN KEY (Emp2_ID) REFERENCES Employee (Employee_ID)
+FOREIGN KEY (Emp1_ID) REFERENCES Employee (Employee_ID) on update cascade,
+FOREIGN KEY (Emp2_ID) REFERENCES Employee (Employee_ID) on update cascade
 );
 
 CREATE TABLE Employee_Approve_Leave (
@@ -215,8 +215,8 @@ Emp1_ID int,
 Leave_ID int, 
 status varchar (50),
 PRIMARY KEY (Emp1_ID, Leave_ID),
-FOREIGN KEY (Emp1_ID) REFERENCES Employee (Employee_ID),
-FOREIGN KEY (Leave_ID) REFERENCES Leave (request_ID),
+FOREIGN KEY (Emp1_ID) REFERENCES Employee (Employee_ID) on update cascade,
+FOREIGN KEY (Leave_ID) REFERENCES Leave (request_ID) on update cascade,
 CHECK (status in ('approved', 'rejected', 'pending'))
 );
 

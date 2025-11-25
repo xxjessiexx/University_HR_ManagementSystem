@@ -2250,14 +2250,6 @@ BEGIN
 	FROM Employee E INNER JOIN Employee_Role R ON (E.employee_ID= R.emp_ID)
 	WHERE R.role_name = ('HR_Representative_'+ @employee_dep) AND E.employment_status='active';
 
-		IF @HRrep_id IS NULL
-BEGIN
-        DECLARE @HRrep_valid_id int = dbo.get_hr_rep_for_emp(@employee_id)  -- get the hr id that is on leave 
-        SELECT @HRrep_id = RE.Emp2_ID 
-        FROM Employee_Replace_Employee RE 
-        WHERE @HRrep_valid_id = RE.Emp1_ID AND RE.from_date <= CURRENT_TIMESTAMP AND RE.to_date >= CURRENT_TIMESTAMP   --- get the employee id who replaces him 
-END
-
 	INSERT INTO Employee_Approve_Leave (Emp1_ID , Leave_ID , status)
 	VALUES (@HRrep_id , @get_req_id, 'pending');   --HR representative 
 

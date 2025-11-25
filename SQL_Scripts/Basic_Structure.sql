@@ -2,7 +2,6 @@ CREATE DATABASE University_HR_ManagementSystem_28;
 
 GO
 
-
 USE University_HR_ManagementSystem_28;
 
 --2.1(b)
@@ -438,20 +437,7 @@ RETURN @HR;
 
 END
 
-     -- helper function to calculate deduced amount based on days 
-     go
-     CREATE FUNCTION Deduction_per_day
-     (@employee_ID int)
-     returns decimal (10,2)
-     AS
-     begin
-     DECLARE @salary decimal (10,2)
-     DECLARE @ded_per_day decimal (10,2)
-     set @salary  = dbo.Calc_Salary (@employee_ID )
-     set @ded_per_day = @salary /22.0 -- rate per day
-     return @ded_per_day
-     END
-     go
+    
 
 --farida helper function 
 CREATE FUNCTION get_hr_rep_for_emp(@employee_ID INT ) RETURNS INT   -- getting hr rep id for a dep 
@@ -799,6 +785,7 @@ GO
 
 
 --2.4(a) yasmin DONE
+Go
 CREATE FUNCTION HRLoginValidation
 (@employee_ID int , @password varchar(50))
 returns bit
@@ -1740,6 +1727,7 @@ GO
 
 
 --2.5 d
+GO
 CREATE FUNCTION Last_month_payroll
 (
     @employee_ID INT
@@ -1782,7 +1770,7 @@ FROM Deduction as D
  WHERE D.emp_ID=@employee_ID AND month (D.date)=@month AND 
  D.type in ('missing_hours', 'missing_days')
  )
-GO;
+GO
 
 
 --2.5 f
@@ -1904,7 +1892,7 @@ CREATE FUNCTION Status_leaves
 (
  SELECT Leave.request_ID, Leave.date_of_request, Leave.final_approval_status
 
-FROM leave inner join Annual_Leave on (Leave.request_ID=Annual_Leave.request_ID)
+FROM Leave inner join Annual_Leave on (Leave.request_ID=Annual_Leave.request_ID)
 
 where month(date_of_request) = month (CURRENT_TIMESTAMP)  
 AND @employee_ID =Annual_Leave.emp_ID 

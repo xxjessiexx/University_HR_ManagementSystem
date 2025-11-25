@@ -2303,9 +2303,8 @@ GO
 
 
 --2.5)m)
-
 GO
-CREATE PROC Upperboard_approve_unpaids
+CREATE PROC Upperboard_approve_unpaids12
 @request_ID int, 
 @Upperboard_ID int
 as
@@ -2313,30 +2312,39 @@ as
 --Employee_ Approve _Employee. Emp1_ID references Employee. Employee_ID
 --Employee_ Approve _Employee. Leave_ID references Leave.request_ID
 
+DECLARE @check bit;
+
+if (exists (SELECT * FROM Document D
+WHERE D.unpaid_ID = @request_ID AND D.type = 'Memo' AND D.status = 'valid'))
+    set @check =1
+else 
+    set @check=0;
+
+PRINT @check
+
+if @check =1
+begin 
 UPDATE Employee_Approve_Leave 
 SET status = 'approved'
 WHERE Leave_ID = @request_ID AND Emp1_ID = @Upperboard_ID 
 AND EXISTS (
 SELECT *
-FROM Document D
-WHERE D.unpaid_ID = @request_ID AND D.type = 'Memo' AND D.status = 'valid')
-AND EXISTS (
-SELECT *
 FROM Unpaid_Leave UL
 WHERE UL.request_ID = @request_ID);
-
+end
+else 
+begin
 --rejecting 
 UPDATE Employee_Approve_Leave
     SET status = 'rejected'
     WHERE Leave_ID = @request_ID
       AND Emp1_ID = @Upperboard_ID
-      AND status = 'pending'  
-      AND NOT EXISTS (
-            SELECT *
-            FROM Document D
-            WHERE D.unpaid_ID = @request_ID AND D.type = 'Memo' AND D.status = 'valid'
-      );
+      AND status = 'pending'
 
+UPDATE Leave 
+SET final_approval_status='rejected'
+WHERE request_ID = @request_ID
+end
 GO 
 
 --2.5)n) 

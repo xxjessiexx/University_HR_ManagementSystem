@@ -225,29 +225,28 @@ go
 GO
 CREATE PROC dropAllTables
 AS
-    DROP TABLE Employee_Approve_Leave;
-    DROP TABLE Employee_Replace_Employee;
-    DROP TABLE Performance;
-    DROP TABLE Deduction;
-    DROP TABLE Attendance;
-    DROP TABLE Payroll;
-    DROP TABLE Document;
-    DROP TABLE Compensation_Leave;
-    DROP TABLE Unpaid_Leave;
-    DROP TABLE Medical_Leave;
-    DROP TABLE Accidental_Leave;
-    DROP TABLE Annual_Leave;
-    DROP TABLE [Leave];
-    DROP TABLE Role_existsIn_Department;
-    DROP TABLE Employee_Role;
-    DROP TABLE Role;
-    DROP TABLE Employee_Phone;
-    DROP TABLE Employee;
-    DROP TABLE Department;
-    DROP TABLE IF EXISTS Holiday; -- do i need to drop holiday table?? YES
-GO
+    DELETE FROM Employee_Approve_Leave; 
+    DELETE FROM Employee_Replace_Employee;
+    DELETE FROM Performance;
+    DELETE FROM Deduction; -- Must be deleted before Payroll/Attendance
+    DELETE FROM Payroll; 
+    DELETE FROM Document;
+    DELETE FROM Compensation_Leave;
+    DELETE FROM Unpaid_Leave;
+    DELETE FROM Medical_Leave;
+    DELETE FROM Accidental_Leave;
+    DELETE FROM Annual_Leave;
+    DELETE FROM Attendance;
+    DELETE FROM [Leave]; -- Base Leave table
+    DELETE FROM Role_existsIn_Department;
+    DELETE FROM Employee_Role;
+    DELETE FROM Employee_Phone;
+    DELETE FROM Employee;
+    DELETE FROM Role;
+    DELETE FROM Department;
+    
 
-
+    GO
  --2.1(d)
 GO
 CREATE PROC dropAllProceduresFunctionsViews
@@ -299,38 +298,42 @@ AS
     DROP PROC Submit_compensation;
     DROP PROC Dean_andHR_Evaluation;
 
-GO
 
 --2.1(e)
 GO
+
 CREATE PROC clearAllTables
 AS
-    TRUNCATE TABLE Employee_Approve_Leave;
-    TRUNCATE TABLE Employee_Replace_Employee;
-    TRUNCATE TABLE Performance;
-    TRUNCATE TABLE Deduction;
-    TRUNCATE TABLE Attendance;
-    TRUNCATE TABLE Payroll;
-    TRUNCATE TABLE Document;
-    TRUNCATE TABLE Compensation_Leave;
-    TRUNCATE TABLE Unpaid_Leave;
-    TRUNCATE TABLE Medical_Leave;
-    TRUNCATE TABLE Accidental_Leave;
-    TRUNCATE TABLE Annual_Leave;
-    TRUNCATE TABLE [Leave];          
-    TRUNCATE TABLE Role_existsIn_Department;
-    TRUNCATE TABLE Employee_Role;
-    TRUNCATE TABLE Role;
-    TRUNCATE TABLE Employee_Phone;
-    TRUNCATE TABLE Employee;
-    TRUNCATE TABLE Department;
+   
+    DELETE FROM Employee_Approve_Leave; 
+    DELETE FROM Employee_Replace_Employee;
+    DELETE FROM Performance;
+    DELETE FROM Deduction; 
+    DELETE FROM Payroll;
+    DELETE FROM Document;
+    DELETE FROM Compensation_Leave;
+    DELETE FROM Unpaid_Leave;
+    DELETE FROM Medical_Leave;
+    DELETE FROM Accidental_Leave;
+    DELETE FROM Annual_Leave;
+    DELETE FROM Attendance;
+    DELETE FROM [Leave]; 
+    DELETE FROM Role_existsIn_Department;
+    DELETE FROM Employee_Role;
+    DELETE FROM Employee_Phone;
+    DELETE FROM Employee;
+    DELETE FROM Role;
+    DELETE FROM Department;
+    IF EXISTS (
+    SELECT 1 
+    FROM sys.tables 
+    WHERE name = 'Holiday'
+     ) begin  DROP TABLE Holiday; end
 GO
+
 -- YASMIN'S HELPER FNS
 -- helper function to calculate salary DONE
-go
 
--- helper function that checks ur contract type
-  -- helper function to calculate deduced amount based on days 
 go
   CREATE FUNCTION Deduction_per_day
   (@employee_ID int)
@@ -424,7 +427,7 @@ RETURN @d_vd;
 END
 GO
 
-CREATE FUNCTION get_President(@EmployeeRank INT, @dep VARCHAR(50)) returns INT -- get id dean/vice dean in same dep with rank higher than input
+CREATE FUNCTION get_President() returns INT -- get id dean/vice dean in same dep with rank higher than input
 AS
 BEGIN
 DECLARE @PresidentID INT;
@@ -3441,7 +3444,7 @@ values (5,20,'pending') --HR_MET
 ------------------------------------------------------
 
 
-
+exec clearAllTables
 
 
 

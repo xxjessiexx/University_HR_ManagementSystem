@@ -433,7 +433,7 @@ DECLARE @PresidentID INT;
     FROM Employee E 
     INNER JOIN Employee_Role ER ON E.employee_ID = ER.emp_ID
     INNER JOIN Role R ON R.role_name = ER.role_name
-    WHERE R.role_name = 'President' 
+    WHERE R.role_name like 'President' or R.role_name like 'Vice%President' 
     AND E.employment_status = 'active'
     ORDER BY R.rank ASC; 
     

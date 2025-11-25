@@ -2151,15 +2151,6 @@ SELECT TOP 1 @medical_dr_id = E.employee_ID
 FROM Employee E INNER JOIN Employee_Role R ON (E.employee_ID = R.emp_ID)
 WHERE E.employment_status = 'active'AND R.role_name= 'Medical Doctor'; 
 
-    IF @HRrep_id IS NULL
-    BEGIN
-        DECLARE @HRrep_valid_id int = dbo.get_hr_rep_for_emp(@employee_id)  -- get the hr id that is on leave 
-        SELECT @HRrep_id = RE.Emp2_ID 
-        FROM Employee_Replace_Employee RE 
-        WHERE @HRrep_valid_id = RE.Emp1_ID AND RE.from_date <= CURRENT_TIMESTAMP AND RE.to_date >= CURRENT_TIMESTAMP    --- get the employee id who replaces him 
-END 
-
-
 if EXISTS (
 SELECT *
 FROM Employee E INNER JOIN Employee_Role R ON (E.employee_ID = R.emp_ID)
@@ -2301,7 +2292,7 @@ GO
 
 --2.5)m)
 GO
-CREATE PROC Upperboard_approve_unpaids1
+CREATE PROC Upperboard_approve_unpaids
 @request_ID int, 
 @Upperboard_ID int
 as

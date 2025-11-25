@@ -216,7 +216,8 @@ Leave_ID int,
 status varchar (50),
 PRIMARY KEY (Emp1_ID, Leave_ID),
 FOREIGN KEY (Emp1_ID) REFERENCES Employee (Employee_ID),
-FOREIGN KEY (Leave_ID) REFERENCES Leave (request_ID)
+FOREIGN KEY (Leave_ID) REFERENCES Leave (request_ID),
+CHECK (status in ('approved', 'rejected', 'pending'))
 );
 
 go
@@ -259,7 +260,7 @@ AS
     DROP VIEW allRejectedMedicals;
     DROP VIEW allEmployeeAttendance;
     -- DROP ALL FUNCTIONS---
-    DROP FUNCTION HRLoginValidation; --do i need to drop my helper functionss?? DROP
+    DROP FUNCTION HRLoginValidation; --do i need to drop my helper functionss?? DROP  REMEBER
     DROP FUNCTION Bonus_amount;
     DROP FUNCTION EmployeeLoginValidation;
     DROP FUNCTION MyPerformance;
@@ -326,9 +327,6 @@ AS
     TRUNCATE TABLE Department;
 GO
 -- YASMIN'S HELPER FNS
--- helper function to calculate salary DONE
-go
-
 -- helper function that checks ur contract type
   -- helper function to calculate deduced amount based on days 
 go
@@ -393,11 +391,12 @@ BEGIN
     FROM Employee E 
     INNER JOIN Employee_Role R ON E.employee_ID = R.emp_ID
     WHERE R.role_name = ('HR_Representative_' + @dep) ;
+
     if EXISTS (SELECT 1 FROM Employee WHERE employee_ID = @HRrep AND employment_status = 'active')
     begin
     set @returned = @HRrep
     end
-    else if @HRrep IS NOT NULL
+    else 
     begin
 
     select top 1 @returned = Emp2_ID from Employee_Replace_Employee 
@@ -2021,7 +2020,7 @@ BEGIN
 
     select @employee_ID = a.emp_ID , @from = l.start_date,@to = l.end_date --gets the start and end dates
     from leave l inner join Annual_Leave a on l.request_ID = a.request_ID
-    where l.request_ID = @request_ID and status = 'pending';
+    where l.request_ID = @request_ID and l.final_approval_status = 'pending';
 
     IF @employee_ID IS NULL RETURN;
 
@@ -2219,8 +2218,6 @@ VALUES (@get_req_id, @employee_ID);
 
 INSERT INTO Document (type, description, file_name, creation_date, expiry_date, status, emp_ID, medical_id,unpaid_id)
 VALUES ('Memo', @document_description, @file_name, CURRENT_TIMESTAMP, NULL, 'valid', @employee_ID, null, @get_req_id);
-
---Employee_Role (emp_ID int (FK), role_name varchar(50) (FK))
 
 IF exists (
 SELECT *

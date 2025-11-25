@@ -2224,13 +2224,6 @@ WHERE R.role_name = 'President';
 IF @check=1 
 BEGIN 
 
-	IF @HRrep_id IS NULL
-BEGIN
-        DECLARE @HRrep_valid_id1 int = dbo.get_hr_rep_for_emp(@employee_id)  -- get the hr id that is on leave 
-        SELECT @HRrep_id = RE.Emp2_ID 
-        FROM Employee_Replace_Employee RE 
-        WHERE @HRrep_valid_id1 = RE.Emp1_ID AND RE.from_date <= CURRENT_TIMESTAMP AND RE.to_date >= CURRENT_TIMESTAMP   --- get the employee id who replaces him 
-END
 
 
 	INSERT INTO Employee_Approve_Leave (Emp1_ID , Leave_ID , status)
@@ -2305,7 +2298,6 @@ WHERE D.unpaid_ID = @request_ID AND D.type = 'Memo' AND D.status = 'valid'))
 else 
     set @check=0;
 
-PRINT @check
 
 if @check =1
 begin 
@@ -2364,14 +2356,6 @@ WHERE R.role_name LIKE 'HR_representative_%' AND E.employee_ID = @employee_ID )
 ELSE 
     SET @check =0
 
-
-IF @HRrep_id IS NULL
-BEGIN
-        DECLARE @HRrep_valid_id int = dbo.get_hr_rep_for_emp(@employee_id)  -- get the hr id that is on leave 
-        SELECT @HRrep_id = RE.Emp2_ID 
-        FROM Employee_Replace_Employee RE 
-        WHERE @HRrep_valid_id = RE.Emp1_ID AND RE.from_date <= CURRENT_TIMESTAMP AND RE.to_date >= CURRENT_TIMESTAMP    --- get the employee id who replaces him 
-END
 
 if @check =0
 

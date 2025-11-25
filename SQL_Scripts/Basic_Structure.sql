@@ -1967,7 +1967,6 @@ END
 GO
 
 
-
 --2.5 (h)
 GO
 CREATE FUNCTION Status_leaves

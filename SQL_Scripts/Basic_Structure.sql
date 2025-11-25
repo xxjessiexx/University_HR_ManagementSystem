@@ -2021,7 +2021,7 @@ BEGIN
 
     select @employee_ID = a.emp_ID , @from = l.start_date,@to = l.end_date --gets the start and end dates
     from leave l inner join Annual_Leave a on l.request_ID = a.request_ID
-    where l.request_ID = @request_ID and status = 'pending';
+    where l.request_ID = @request_ID and l.final_approval_status = 'pending';
 
     IF @employee_ID IS NULL RETURN;
 

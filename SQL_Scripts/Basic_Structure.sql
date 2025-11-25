@@ -2304,7 +2304,7 @@ GO
 
 --2.5)m)
 GO
-CREATE PROC Upperboard_approve_unpaids12
+CREATE PROC Upperboard_approve_unpaids1
 @request_ID int, 
 @Upperboard_ID int
 as

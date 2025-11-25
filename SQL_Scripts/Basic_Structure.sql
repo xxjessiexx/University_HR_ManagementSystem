@@ -250,7 +250,7 @@ GO
 
 
  --2.1(d)
-GO
+GO 
 CREATE PROC dropAllProceduresFunctionsViews
 AS
     -- DROP ALL VIEWS-----
@@ -433,7 +433,7 @@ RETURN @d_vd;
 END
 GO
 
-CREATE FUNCTION get_President(@EmployeeRank INT, @dep VARCHAR(50)) returns INT -- get id dean/vice dean in same dep with rank higher than input
+CREATE FUNCTION get_President() returns INT -- get id dean/vice dean in same dep with rank higher than input
 AS
 BEGIN
 DECLARE @PresidentID INT;
@@ -2351,7 +2351,6 @@ DECLARE @check bit;
 INSERT INTO Leave (date_of_request, start_date, end_date)
 VALUES(CURRENT_TIMESTAMP, @compensation_date, @compensation_date);
 
---how to get the req_id of the leave? scope_identity is allowed
 SET @get_req_id= SCOPE_IDENTITY();
 
 INSERT INTO Compensation_Leave (request_ID, reason, date_of_original_workday, emp_ID, replacement_emp)

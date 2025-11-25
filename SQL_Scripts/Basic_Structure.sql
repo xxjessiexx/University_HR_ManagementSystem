@@ -331,6 +331,7 @@ go
 
 -- helper function that checks ur contract type
   -- helper function to calculate deduced amount based on days 
+go
   CREATE FUNCTION Deduction_per_day
   (@employee_ID int)
      returns decimal (10,2)
@@ -339,13 +340,13 @@ go
      DECLARE @salary decimal (10,2)
      DECLARE @ded_per_day decimal (10,2)
      set @salary  = dbo.Calc_Salary (@employee_ID )
-     set @ded_per_day = @salary /22.0 -- rate per day
+     set @ded_per_day = @salary /22.0
      return @ded_per_day
      END
      go
 
 
-CREATE FUNCTION type_contract (@employee_ID INT) returns varchar(50) --checks for part time contract
+CREATE FUNCTION type_contract(@employee_ID INT) returns varchar(50) --checks for part time contract <3
 AS
 BEGIN
    declare @part_time_check varchar(50) ;
@@ -355,7 +356,7 @@ BEGIN
     return @part_time_check;
 END
 GO
-CREATE FUNCTION getRole(@employee_ID INT) returns varchar(50) --gets the role of an employee
+CREATE FUNCTION getRole(@employee_ID INT) returns varchar(50) --gets the role of an employee <3
 AS
 BEGIN
 DECLARE @role varchar(50);
@@ -369,7 +370,7 @@ DECLARE @role varchar(50);
 RETURN @role
 END
 GO
-CREATE FUNCTION getDep(@employee_ID INT) returns varchar(50) --returns the department my emp works in
+CREATE FUNCTION getDep(@employee_ID INT) returns varchar(50) --returns the department my emp works in <3
 AS
 BEGIN
 DECLARE @dep varchar(50);
@@ -381,20 +382,34 @@ RETURN @dep
 END
 GO
 
-CREATE FUNCTION HR_rep(@employee_ID INT) returns INT --get the representative for your employee
+CREATE FUNCTION HR_rep(@employee_ID INT) returns INT --get the representative for your employee  in same dep<3
 AS
 BEGIN
    DECLARE @HRrep INT;
    DECLARE @dep VARCHAR(50) =  dbo.getDep(@employee_ID) ;
+   declare @returned int
+   DECLARE @CurrentDate DATE = CAST(GETDATE() AS DATE);
    SELECT TOP 1 @HRrep = E.employee_ID 
     FROM Employee E 
     INNER JOIN Employee_Role R ON E.employee_ID = R.emp_ID
-    WHERE R.role_name = ('HR_Representative_' + @dep) AND E.employment_status = 'active';
-    
-    RETURN @HRrep;
+    WHERE R.role_name = ('HR_Representative_' + @dep) ;
+    if EXISTS (SELECT 1 FROM Employee WHERE employee_ID = @HRrep AND employment_status = 'active')
+    begin
+    set @returned = @HRrep
+    end
+    else if @HRrep IS NOT NULL
+    begin
+
+    select top 1 @returned = Emp2_ID from Employee_Replace_Employee 
+    where Emp1_ID = @HRrep AND from_date <= @CurrentDate AND to_date >= @CurrentDate
+    order by Table_ID desc
+    end
+    return @returned
+
 END
 GO
-CREATE FUNCTION get_Dean(@dep VARCHAR(50)) returns INT -- get id dean/vice dean in same dep
+
+CREATE FUNCTION get_Dean(@dep VARCHAR(50)) returns INT -- get id dean/vice dean in same dep <3
 AS
 BEGIN
 DECLARE @d_vd INT
@@ -408,37 +423,98 @@ RETURN @d_vd;
 
 END
 GO
-CREATE FUNCTION get_Higher_Dean(@EmployeeRank INT, @dep VARCHAR(50)) returns INT -- get id dean/vice dean in same dep with rank higher than input
+
+CREATE FUNCTION get_President(@EmployeeRank INT, @dep VARCHAR(50)) returns INT -- get id dean/vice dean in same dep with rank higher than input
 AS
 BEGIN
-DECLARE @d_vd INT
-SELECT TOP 1 @d_vd = e.employee_ID
-FROM Employee E INNER JOIN  Employee_Role ER ON E.employee_ID = ER.emp_ID
-INNER JOIN Role R ON R.role_name = ER.role_name
-WHERE E.dept_name = @dep AND R.role_name IN ('Dean','Vice Dean')
-AND E.employment_status = 'active'
-AND R.rank < @EmployeeRank 
-ORDER BY R.rank ASC
-RETURN @d_vd;
+DECLARE @PresidentID INT;
 
+    SELECT TOP 1 @PresidentID = E.employee_ID
+    FROM Employee E 
+    INNER JOIN Employee_Role ER ON E.employee_ID = ER.emp_ID
+    INNER JOIN Role R ON R.role_name = ER.role_name
+    WHERE R.role_name = 'President' 
+    AND E.employment_status = 'active'
+    ORDER BY R.rank ASC; 
+    
+    RETURN @PresidentID;
 END
+
 go
-CREATE FUNCTION get_Higher_HR(@EmployeeRank INT, @dep VARCHAR(50)) returns INT -- get id HR in same dep with rank higher than input
+
+
+CREATE FUNCTION get_HR_Manager() returns INT -- get id HR in same dep with rank higher than input 
 AS
 BEGIN
 DECLARE @HR INT
 SELECT TOP 1 @HR = E.employee_ID
 FROM Employee E INNER JOIN  Employee_Role ER ON E.employee_ID = ER.emp_ID
 INNER JOIN Role R ON R.role_name = ER.role_name
-WHERE E.dept_name like 'HR%' AND R.role_name like 'HR%'
-AND R.rank < @EmployeeRank
+WHERE  R.role_name like 'HR%Manager' 
 ORDER BY R.rank ASC
 RETURN @HR;
-
 END
 
+go
+go
+CREATE FUNCTION CalculateDays
+(
+    @Leave_Start DATE,
+    @Leave_End DATE,
+    @Month_Date DATE 
+)
+RETURNS INT
+AS
+BEGIN
     
+    DECLARE @Month_Start DATE = DATEFROMPARTS(YEAR(@Month_Date), MONTH(@Month_Date), 1);
+    DECLARE @Month_End DATE = EOMONTH(@Month_Date);  
+    DECLARE @S DATE = @Leave_Start; 
+    DECLARE @E DATE = @Leave_End;     
+    DECLARE @days INT;
 
+    IF @S < @Month_Start
+        SET @S = @Month_Start;
+ 
+    IF @E > @Month_End
+        SET @E = @Month_End;
+     IF @S > @E
+        SET @days = 0;
+    ELSE
+        
+        SET @days = DATEDIFF(DAY, @S, @E) + 1;
+        
+    RETURN @days;
+END;
+GO
+-- helper function to calculate salary
+CREATE FUNCTION Calc_Salary (@employee_ID int)
+returns decimal (10,2)
+AS
+begin
+DECLARE @salary decimal (10,2) = 0.0;
+DECLARE @base_salary decimal (10,2)
+DECLARE @perc_YOE DECIMAL(5,2);
+DECLARE @YOE INT;
+
+SELECT TOP 1
+        @base_salary = R.base_salary,
+        @perc_YOE    = R.percentage_YOE
+    FROM Employee_Role ER
+    JOIN Role R ON ER.role_name = R.role_name
+    WHERE ER.emp_ID = @employee_ID
+    ORDER BY R.rank DESC;       
+
+    SELECT @YOE = years_of_experience
+    FROM Employee
+    WHERE employee_ID = @employee_ID;
+
+    IF @base_salary IS NULL
+
+    SET @salary =@base_salary + (@perc_YOE / 100.0) * @YOE * @base_salary;
+      return @salary
+end
+go    
 --farida helper function 
 CREATE FUNCTION get_hr_rep_for_emp(@employee_ID INT ) RETURNS INT   -- getting hr rep id for a dep 
 AS
@@ -508,16 +584,15 @@ SELECT L.request_ID AS "leave request id",
 FROM Medical_Leave M INNER JOIN Leave L ON M.request_ID = L.request_ID
 WHERE L.final_approval_status = 'rejected';
 
---2.2)e) yasmin DONE
 
+--2.2)e) yasmin 
 GO
-CREATE VIEW allEmployeeAttendance
+CREATE  VIEW allEmployeeAttendance
 as
 SELECT * 
-FROM Attendance --- am i allowed to use this? how else would i check the date is yesterday? YES
-WHERE status = 'attended' AND date = CAST(DATEADD(day, -1, GETDATE()) AS DATE)  ;
+FROM Attendance 
+WHERE status = 'attended' AND date = CAST(DATEADD(day, -1, current_timestamp ) AS DATE)  ;
 GO
-
 --2.3(a)
 GO
 CREATE PROC Update_Status_Doc 
@@ -540,15 +615,17 @@ where emp_ID IN (
         );
 GO
 
--- 2.3)c) Update the employees employment_status daily
-CREATE PROC Update_Employment_Status 
-    @Employee_ID int 
-AS 
+-- 2.3)c) Update the employees employment_status daily yasmin
+go
+CREATE PROC Update_Employment_Status
+    @Employee_ID int
+AS
 BEGIN
-    DECLARE @IsOnLeave bit = dbo.Is_On_Leave(@Employee_ID, current_timestamp ,current_timestamp );
-    DECLARE @CurrentStatus varchar(50);
+    declare @Today DATE = CAST(GETDATE() AS DATE);
     
-   
+   declare @IsOnLeave BIT = dbo.Is_On_Leave(@Employee_ID, @Today, @Today);
+    
+    declare @CurrentStatus VARCHAR(50);
     
     SELECT @CurrentStatus = employment_status
     FROM Employee
@@ -556,13 +633,13 @@ BEGIN
 
     IF @CurrentStatus = 'active' AND @IsOnLeave = 1
     BEGIN
-        update Employee
+        UPDATE Employee
         SET employment_status = 'onleave'
         WHERE employee_ID = @Employee_ID;
     END
     
     ELSE IF @CurrentStatus = 'onleave' AND @IsOnLeave = 0
-    begin
+    BEGIN
         UPDATE Employee
         SET employment_status = 'active'
         WHERE employee_ID = @Employee_ID;
@@ -785,7 +862,6 @@ GO
 
 
 --2.4(a) yasmin DONE
-Go
 CREATE FUNCTION HRLoginValidation
 (@employee_ID int , @password varchar(50))
 returns bit
@@ -797,8 +873,8 @@ FROM Employee E INNER JOIN Employee_Role R
 ON E.employee_ID = R.emp_ID
 WHERE E.employee_ID= @employee_ID AND
 E.password= @password AND
-R.role_name LIKE 'HR%' 
-AND E.employment_status='active')
+e.dept_name like '%HR%'
+AND E.employment_status='active') --do i need to make sure he is active??
 
 set @success=1
 else
@@ -806,7 +882,6 @@ set @success=0
 return @success
 end
 go 
-
 
 
 --2.4(b)---
@@ -1475,38 +1550,7 @@ AS
 
 -- helper function that returns the number of days in this month
 GO
-CREATE FUNCTION CalculateDays
-(
-    @Leave_Start DATE,
-    @Leave_End DATE,
-    @Month_Date DATE 
-)
-RETURNS INT
-AS
-BEGIN
-    
-    DECLARE @Month_Start DATE = DATEFROMPARTS(YEAR(@Month_Date), MONTH(@Month_Date), 1);
-    DECLARE @Month_End DATE = EOMONTH(@Month_Date);  
-    DECLARE @S DATE = @Leave_Start; 
-    DECLARE @E DATE = @Leave_End;     
-    DECLARE @days INT;
-
-    IF @S < @Month_Start
-        SET @S = @Month_Start;
- 
-    IF @E > @Month_End
-        SET @E = @Month_End;
-     IF @S > @E
-        SET @days = 0;
-    ELSE
-        
-        SET @days = DATEDIFF(DAY, @S, @E) + 1;
-        
-    RETURN @days;
-END;
-GO
--- WORKING ON IT GIVE ME A MIN , works probs
-CREATE PROCEDURE Deduction_unpaid -- are they always added at 1 of the month?  
+CREATE PROC Deduction_unpaid 
     @employee_ID INT
 AS
 BEGIN
@@ -1514,26 +1558,47 @@ BEGIN
   declare @ded_per_day as decimal (10,2) = dbo.Deduction_per_day (@employee_ID);
   DECLARE @MonthStart DATE = DATEFROMPARTS(YEAR(GETDATE()),MONTH(GETDATE()), 1);
   DECLARE @MonthEnd DATE = EOMONTH(GETDATE());
-
+  DECLARE @NextMonthStart DATE = DATEADD(month, 1, @MonthStart);
+  DECLARE @NextMonthEnd DATE = EOMONTH(@NextMonthStart);
+  DECLARE @CurrentDate DATE = CAST(GETDATE() AS DATE);
 
    INSERT INTO Deduction (emp_ID, date, amount, type,  unpaid_ID, attendance_ID)
-   SELECT U.emp_ID, @MonthStart,
-  ( @ded_per_day *(dbo.CalculateDays(L.start_date ,l.end_date ,GETDATE())) )
+   SELECT U.emp_ID,  @CurrentDate,
+  ( @ded_per_day *(dbo.CalculateDays(L.start_date ,l.end_date ,@MonthStart)) )
     , 'unpaid', 
     L.request_ID, null
    FROM  Leave L inner join Unpaid_Leave U on L.request_ID=U.request_ID
    WHERE L.final_approval_status = 'approved' 
    AND U.Emp_ID = @employee_ID
-   AND L.start_date <= @MonthEnd  
-    AND L.end_date >= @MonthStart
+   AND L.end_date >= @MonthStart
+   AND L.start_date <= @MonthEnd
+   AND dbo.CalculateDays(L.start_date, L.end_date, @MonthStart) > 0
    and not exists(
-    select *
+    select 1
     from  Deduction D
             WHERE D.unpaid_ID   =  l.request_ID
           AND D.emp_ID = U.Emp_ID
-            AND MONTH(D.date) = MONTH(GETDATE()) 
-            AND YEAR(D.date) = YEAR(GETDATE())  
-            and D.status = 'finalized'
+            AND MONTH(D.date) = MONTH(@MonthStart) 
+            AND YEAR(D.date) = YEAR(@MonthStart)  )
+
+   INSERT INTO Deduction (emp_ID, date, amount, type,  unpaid_ID, attendance_ID)
+   SELECT U.emp_ID,  @NextMonthStart,
+  ( @ded_per_day *(dbo.CalculateDays(L.start_date ,l.end_date ,@NextMonthStart)) )
+    , 'unpaid', 
+    L.request_ID, null
+   FROM  Leave L inner join Unpaid_Leave U on L.request_ID=U.request_ID
+   WHERE L.final_approval_status = 'approved' 
+   AND U.Emp_ID = @employee_ID
+  AND L.end_date >= @NextMonthStart 
+   AND L.start_date <= @NextMonthEnd
+   AND dbo.CalculateDays(L.start_date, L.end_date, @MonthStart) > 0
+   and not exists(
+    select 1
+    from  Deduction D
+            WHERE D.unpaid_ID   =  l.request_ID
+          AND D.emp_ID = U.Emp_ID
+          AND MONTH(D.date) = MONTH(@NextMonthStart) 
+          AND YEAR(D.date) = YEAR(@NextMonthStart)
 );
 
 END 
@@ -1611,37 +1676,50 @@ GO
 
 
 --2.4)I) yasmin DONE
-CREATE PROC Add_Payroll 
+CREATE PROC Add_Payroll
 @employee_ID int,
-@from date, 
+@from date,
 @to date
 as
 begin
-DECLARE @Bonus decimal (10,2)
-DECLARE @totalDeductions decimal (10,2)
-DECLARE @final_salary_amount decimal (10,1)
+    DECLARE @Bonus decimal (10,2);
+    DECLARE @totalDeductions decimal (10,2);
+    DECLARE @final_salary_amount decimal (10,1);
 
-set @Bonus = dbo.Bonus_amount (@employee_ID)
+   
+    set @Bonus = dbo.Bonus_amount (@employee_ID);
 
-set @totalDeductions = (SELECT SUM (amount) FROM Deduction 
-WHERE emp_ID = @employee_ID AND date BETWEEN @from AND @to and status = 'pending' )
+    set @totalDeductions = ISNULL((
+        SELECT SUM (amount) 
+        FROM Deduction
+        WHERE emp_ID = @employee_ID AND date BETWEEN @from AND @to and status = 'pending' 
+    ), 0);
 
-set @final_salary_amount =  dbo.Calc_Salary (@employee_ID ) + @Bonus - @totalDeductions
---how am i supposed to add comments?? ANYTHING AADY
+    set @final_salary_amount = dbo.Calc_Salary (@employee_ID ) + @Bonus - @totalDeductions;
+
+ 
+IF @totalDeductions > 0 AND @Bonus > 0
+    SET @Payroll_Comment = 'Contains bonus and deductions.';
+ELSE IF @totalDeductions > 0
+    SET @Payroll_Comment = 'Contains deductions.';
+ELSE IF @Bonus > 0
+    SET @Payroll_Comment = 'Contains bonus ';
+ELSE
+    SET @Payroll_Comment = 'Standard monthly payroll';
+
 
 INSERT INTO
 Payroll ( payment_date, final_salary_amount, from_date,
-to_date,  bonus_amount, deductions_amount, emp_ID ) 
+to_date, bonus_amount, deductions_amount, emp_ID, comments ) 
 
-VALUES ( GETDATE(), @final_salary_amount,@from,
-@to,  @Bonus, @totalDeductions, @employee_ID)
-
-UPDATE Deduction
-SET status = 'finalized'
-WHERE emp_ID = @employee_ID AND date BETWEEN @from AND @to and status = 'pending'
+VALUES ( GETDATE(), @final_salary_amount, @from,
+@to, @Bonus, @totalDeductions, @employee_ID, @Payroll_Comment ) 
+    
+    UPDATE Deduction
+    SET status = 'finalized'
+    WHERE emp_ID = @employee_ID AND date BETWEEN @from AND @to and status = 'pending';
 end
 go
-
 
 --2.5(a)--
 GO
@@ -1911,86 +1989,133 @@ go
 
 
 
---2.5)I) yasmin As a Dean/Vice-dean/President I can approve/reject annual leaves
+---2.5)I) yasmin As a Dean/Vice-dean/President I can approve/reject annual leaves <3
 
 CREATE PROC Upperboard_approve_annual
 @request_ID int,
 @Upperboard_ID int,
 @replacement_ID int
 as
-BEGIN ---do i need to check that the dep are equal with the president? 
-   declare @employee_ID int;
-   declare @from date;
-   declare @to date;
-   
-   declare @dep1 varchar(50) = dbo.getDep(@employee_ID );
-   declare @dep2 varchar(50) = dbo.getDep(@replacement_ID );
-   declare @role varchar(50) = dbo.getRole(@Upperboard_ID);
-   -- do i need to check that the correct replacment id was entered??
+BEGIN 
+    declare @employee_ID INT;
+    declare @from DATE;
+    declare @to DATE;
+    
+    declare @dep1 VARCHAR(50);
+    declare @dep2 VARCHAR(50);
+    declare @contract_type VARCHAR(50);
+    declare @role VARCHAR(50) = dbo.getRole(@Upperboard_ID); 
+   if(not exists (select * from leave l where l.request_ID = @request_ID ) OR
+   not exists (select * from Employee E where E.employee_ID = @Upperboard_ID ) OR
+   not exists (select * from Employee E where E.employee_ID = @replacement_ID )
+   OR exists (SELECT 1 FROM Leave WHERE request_ID = @request_ID AND final_approval_status = 'rejected') )-- the leave/employees do not exist
 
-   select @employee_ID = l.employee_ID , @from = l.start_date,@to = l.end_date
+   begin
+   return;
+   end
+ 
+    if ( @role <> 'President' AND @role NOT LIKE 'Vice%Dean' AND @role <> 'Dean' ) 
+    begin 
+    return; 
+    end;
+
+    select @employee_ID = l.employee_ID , @from = l.start_date,@to = l.end_date --gets the start and end dates
     from leave l inner join Annual_Leave a on l.request_ID = a.request_ID
     where l.request_ID = @request_ID and status = 'pending';
 
+    IF @employee_ID IS NULL RETURN;
 
     declare @is_on_leave int = dbo.Is_On_Leave(@replacement_ID,@from,@to);
 
-   if (@employee_ID is not null) begin
-   if (@dep1 = @dep2 and @is_on_leave = '0' and @role in ('President','Dean', 'Vice Dean') ) --only dean vd and pres?? not vp??
-   begin
+   set @dep1 = dbo.getDep(@employee_ID );
+   set @dep2 = dbo.getDep(@replacement_ID );
+   set @contract_type  = dbo.type_contract (@employee_ID ); --part time check added <3
+
+  
+
+    if (@contract_type = 'part_time'or @dep1 <> @dep2 or @is_on_leave = 1) --if not same dep/ part time reject/on leave
+    begin
+    --update final status to rejected
+    update leave 
+    set final_approval_status = 'rejected' where request_ID = @request_ID and final_approval_status = 'pending' ;
+    --update rejected in employee_approve_leave
+    UPDATE Employee_Approve_Leave 
+    SET status = 'rejected'
+    WHERE Leave_ID = @request_ID AND Emp1_ID = @Upperboard_ID --and status = 'pending';
+                            
+    return;
+    end  
+   
     UPDATE Employee_Approve_Leave 
     SET status = 'approved'
-    WHERE Leave_ID = @request_ID AND Emp1_ID = @Upperboard_ID;
-    end
-    else 
-    begin
-    UPDATE Employee_Approve_Leave
-    SET status = 'rejected'
-    WHERE Leave_ID = @request_ID AND Emp1_ID = @Upperboard_ID;
-    end
-    end
+    WHERE Leave_ID = @request_ID AND Emp1_ID = @Upperboard_ID -- and status = 'pending';
+    
+
 END
 
 
 
-
---2.5)J) yasmin Apply for an accidental leave.  DONE
+--2.5)J) yasmin Apply for an accidental leave.  
 GO
 CREATE PROC Submit_accidental
     @employee_ID INT, 
-    @start_date DATE, 
+    @start_date DATE,
     @end_date DATE 
-AS
+AS             
+
 BEGIN
-    DECLARE @HRrep_id INT;
+    ---WHY IS IT RETURNNG A  MEDICAL DR?
     DECLARE @employee_dep VARCHAR(50) ;
     DECLARE @get_req_id INT;
     declare @contract_type varchar(50) = dbo.type_contract (@employee_ID )
     declare @dep varchar(50) = dbo.getDep(@employee_ID );
-    if (@contract_type <> 'part_time')
-
+    declare @role varchar(50) = dbo.getRole(@employee_ID);  
+    DECLARE @duration_days INT = DATEDIFF(DAY, @start_date, @end_date) + 1;
+    DECLARE @ApproverID INT;
+    if(not exists (select * from Employee E where E.employee_ID =  @employee_ID )) 
     begin
- 
+    print 'This employee does not exist in our current database';
+    return;
+    end
+
+    if (@contract_type = 'part_time') -- Reject part time employees
+    begin
+    print 'A part time employee may not request a leave';
+    return;
+    end
+
+    --IF (@duration_days <> 1)
+    --BEGIN
+      --  PRINT 'Accidental leave duration must be exactly 1 day.';
+       -- RETURN;
+   -- END
+
     --insert into leave
     INSERT INTO Leave (date_of_request, start_date, end_date)
     VALUES(CURRENT_TIMESTAMP, @start_date, @end_date);
+    
+    SET @get_req_id = SCOPE_IDENTITY();   
 
-    SET @get_req_id = SCOPE_IDENTITY();
     --insert into accidental leave
-   
     INSERT INTO Accidental_Leave (request_ID, emp_ID)
-    VALUES (@get_req_id, @employee_ID);
+    VALUES (@get_req_id, @employee_ID)
 
-    --get the hr rep
-     declare @HRrep int = dbo.HR_rep(@employee_ID  ); 
-    -- insert into employee approve leave
-   
-    IF @HRrep IS NOT NULL
-        INSERT INTO Employee_Approve_Leave (Emp1_ID , Leave_ID , status)
-        VALUES (@HRrep , @get_req_id, 'pending');
+    if(@role like 'HR%Representative%') -- IF HR EMPLOYEE THEN HR MANAGER??
+    begin
+     DECLARE @HRmanager INT = dbo.get_HR_Manager(); 
+     SET @ApproverID = @HRmanager;
+    end
+    else if (@role not like 'HR%Representative%') 
+     begin
+    SET @ApproverID = dbo.HR_rep(@employee_ID);
      end
+
+     INSERT INTO Employee_Approve_Leave (Emp1_ID , Leave_ID , status)
+     VALUES (@ApproverID , @get_req_id, 'pending');
+     
 END
 GO
+
 
  --faridaaaaaa
 --2.5)k)

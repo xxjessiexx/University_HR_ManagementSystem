@@ -68,6 +68,10 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="EmployeeHome.aspx" />
+    <Content Include="HRApproval.aspx" />
+    <Content Include="HRDeductions.aspx" />
+    <Content Include="HRHome.aspx" />
+    <Content Include="HRPayroll.aspx" />
     <Content Include="LeaveStatus.aspx" />
     <Content Include="LogIn.aspx" />
     <Content Include="MyAttendance.aspx" />
@@ -85,6 +89,34 @@
     </Compile>
     <Compile Include="EmployeeHome.aspx.designer.cs">
       <DependentUpon>EmployeeHome.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="HRApproval.aspx.cs">
+      <DependentUpon>HRApproval.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="HRApproval.aspx.designer.cs">
+      <DependentUpon>HRApproval.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="HRDeductions.aspx.cs">
+      <DependentUpon>HRDeductions.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="HRDeductions.aspx.designer.cs">
+      <DependentUpon>HRDeductions.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="HRHome.aspx.cs">
+      <DependentUpon>HRHome.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="HRHome.aspx.designer.cs">
+      <DependentUpon>HRHome.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="HRPayroll.aspx.cs">
+      <DependentUpon>HRPayroll.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="HRPayroll.aspx.designer.cs">
+      <DependentUpon>HRPayroll.aspx</DependentUpon>
     </Compile>
     <Compile Include="LeaveStatus.aspx.cs">
       <DependentUpon>LeaveStatus.aspx</DependentUpon>

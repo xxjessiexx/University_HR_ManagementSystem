@@ -15,37 +15,34 @@
         <div class="container">
             <div class="brand"><span class="logo-dot"></span>UniBlossom HR</div>
 
-            <ul class="nav">
-                <li><a href="EmployeeHome.aspx">Dashboard</a></li>
+           <ul class="nav">
+    <li><a href="EmployeeHome.aspx">Dashboard</a></li>
 
-                <li>
-                    <a href="#" class="nav-btn">Attendance ▾</a>
-                    <div class="dropdown-panel">
-                        <a href="MyAttendance.aspx">My Attendance</a>
-                        <a href="MyDeductions.aspx">My Deductions</a>
-                    </div>
-                </li>
+    <li>
+        <a href="#" class="nav-btn">Attendance ▾</a>
+        <div class="dropdown-panel">
+            <a href="MyAttendance.aspx">My Attendance</a>
+            <a href="MyDeductions.aspx">My Deductions</a>
+        </div>
+    </li>
 
-                <li><a href="MyPayroll.aspx">Payroll</a></li>
+    <li><a href="MyPayroll.aspx">Payroll</a></li>
+    <li><a href="MyPerformance.aspx">Performance</a></li>
 
-                <li>
-                    <a href="#" class="nav-btn">Performance ▾</a>
-                    <div class="dropdown-panel">
-                        <a href="MyPerformance.aspx">My Performance</a>
-                    </div>
-                </li>
+    <li>
+        <a href="#" class="nav-btn">Leaves ▾</a>
+        <div class="dropdown-panel">
+            <a href="SubmitAnnualLeave.aspx">Submit Annual Leave</a>
+            <a href="SubmitAccidentalLeave.aspx">Submit Accidental Leave</a>
+            <a href="SubmitCompensationLeave.aspx">Submit Compensation Leave</a>
+            <a href="SubmitMedicalLeave.aspx">Submit Medical Leave</a>
+            <a href="SubmitUnpaidLeave.aspx">Submit Unpaid Leave</a>
+            <a href="LeaveStatus.aspx">Leave Status</a>
+        </div>
+    </li>
 
-                <li>
-                    <a href="#" class="nav-btn">Leaves ▾</a>
-                    <div class="dropdown-panel">
-                        <a href="SubmitAnnualLeave.aspx">Submit Annual Leave</a>
-                        <a href="LeaveStatus.aspx">Leave Status</a>
-                    </div>
-                </li>
-
-                <li><a class="deductions" href="MyDeductions.aspx">Deductions</a></li>
-            </ul>
-
+    <li><a href="MyDeductions.aspx">Deductions</a></li>
+</ul>
             <div class="nav-end">
                 <a href="LogIn.aspx">Logout</a>
             </div>

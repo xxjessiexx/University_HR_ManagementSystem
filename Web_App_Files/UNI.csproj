@@ -68,13 +68,20 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="EmployeeHome.aspx" />
+    <Content Include="Evaluation.aspx" />
     <Content Include="LeaveStatus.aspx" />
     <Content Include="LogIn.aspx" />
     <Content Include="MyAttendance.aspx" />
     <Content Include="MyDeductions.aspx" />
     <Content Include="MyPayroll.aspx" />
     <Content Include="MyPerformance.aspx" />
+    <Content Include="ProcessingAnnualLeaves.aspx" />
+    <Content Include="ProcessingUnpaidLeave.aspx" />
+    <Content Include="SubmitAccidentalLeave.aspx" />
     <Content Include="SubmitAnnualLeave.aspx" />
+    <Content Include="SubmitCompensationLeave.aspx" />
+    <Content Include="SubmitMedicalLeave.aspx" />
+    <Content Include="SubmitUnpaidLeave.aspx" />
     <Content Include="Web.config" />
   </ItemGroup>
   <ItemGroup>
@@ -84,6 +91,13 @@
     </Compile>
     <Compile Include="EmployeeHome.aspx.designer.cs">
       <DependentUpon>EmployeeHome.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="Evaluation.aspx.cs">
+      <DependentUpon>Evaluation.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="Evaluation.aspx.designer.cs">
+      <DependentUpon>Evaluation.aspx</DependentUpon>
     </Compile>
     <Compile Include="LeaveStatus.aspx.cs">
       <DependentUpon>LeaveStatus.aspx</DependentUpon>
@@ -127,13 +141,55 @@
     <Compile Include="MyPerformance.aspx.designer.cs">
       <DependentUpon>MyPerformance.aspx</DependentUpon>
     </Compile>
+    <Compile Include="ProcessingAnnualLeaves.aspx.cs">
+      <DependentUpon>ProcessingAnnualLeaves.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="ProcessingAnnualLeaves.aspx.designer.cs">
+      <DependentUpon>ProcessingAnnualLeaves.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="ProcessingUnpaidLeave.aspx.cs">
+      <DependentUpon>ProcessingUnpaidLeave.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="ProcessingUnpaidLeave.aspx.designer.cs">
+      <DependentUpon>ProcessingUnpaidLeave.aspx</DependentUpon>
+    </Compile>
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="SubmitAccidentalLeave.aspx.cs">
+      <DependentUpon>SubmitAccidentalLeave.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="SubmitAccidentalLeave.aspx.designer.cs">
+      <DependentUpon>SubmitAccidentalLeave.aspx</DependentUpon>
+    </Compile>
     <Compile Include="SubmitAnnualLeave.aspx.cs">
       <DependentUpon>SubmitAnnualLeave.aspx</DependentUpon>
       <SubType>ASPXCodeBehind</SubType>
     </Compile>
     <Compile Include="SubmitAnnualLeave.aspx.designer.cs">
       <DependentUpon>SubmitAnnualLeave.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="SubmitCompensationLeave.aspx.cs">
+      <DependentUpon>SubmitCompensationLeave.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="SubmitCompensationLeave.aspx.designer.cs">
+      <DependentUpon>SubmitCompensationLeave.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="SubmitMedicalLeave.aspx.cs">
+      <DependentUpon>SubmitMedicalLeave.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="SubmitMedicalLeave.aspx.designer.cs">
+      <DependentUpon>SubmitMedicalLeave.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="SubmitUnpaidLeave.aspx.cs">
+      <DependentUpon>SubmitUnpaidLeave.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="SubmitUnpaidLeave.aspx.designer.cs">
+      <DependentUpon>SubmitUnpaidLeave.aspx</DependentUpon>
     </Compile>
   </ItemGroup>
   <ItemGroup>

@@ -1,20 +1,22 @@
-﻿<%@ Page Language="C#" AutoEventWireup="true" CodeBehind="LogIn.aspx.cs" Inherits="HR.LogIn" %>
+﻿<%@ Page Language="C#" AutoEventWireup="true" CodeBehind="SubmitUnpaidLeave.aspx.cs" Inherits="UNI.SubmitUnpaidLeave" %>
 
 <!DOCTYPE html>
+
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head runat="server">
-    <title>Employee Login</title>
-    <link rel="stylesheet" href="Styles/site.css" />
+    <title>Submit Unpaid Leave</title>
+<link rel="stylesheet" href="Styles/site.css" />
 </head>
-
 <body>
-    <header class="top-navbar">
+    <form id="form1" runat="server">
+        <!--navbar-->
+        <header class="top-navbar">
     <div class="container">
         <div class="brand">
-            <span class="logo-dot"></span>UniBlossom HR
+            <span class="logo-dot"></span> UniBlossom HR
         </div>
 
-                   <ul class="nav">
+        <ul class="nav">
     <li><a href="EmployeeHome.aspx">Dashboard</a></li>
 
     <li>
@@ -48,42 +50,31 @@
         </div>
     </div>
 </header>
+         <div class="container-page">
 
-    <form id="form1" runat="server">
+     <div class="page-title">Submit Unpaid Leave</div>
 
-        <div class="container-page" style="max-width:430px; margin-top:80px;">
-            
-            <div class="page-title" style="text-align:center;">
-                Employee Login
-            </div>
+     <div class="card">
+         <label>Employee ID</label>
+         <asp:TextBox ID="empId" runat="server"></asp:TextBox>
 
-            <div class="card">
+         <label>Start Date</label>
+         <asp:TextBox ID="sdate" runat="server" TextMode="Date"></asp:TextBox>
 
-                <label>User Name</label>
-                <asp:TextBox ID="UserName" runat="server"></asp:TextBox>
+         <label>End Date</label>
+         <asp:TextBox ID="edate" runat="server" TextMode="Date"></asp:TextBox>
 
-                <label>Password</label>
-                <asp:TextBox ID="Password" runat="server" TextMode="Password"></asp:TextBox>
+         <label>Submitted Document Description</label>
+         <asp:TextBox ID="doc_des" runat="server" Width="150px"></asp:TextBox>
 
-                <asp:Button 
-                    ID="Button1" 
-                    runat="server" 
-                    Text="Log In" 
-                    CssClass="btn"
-                    OnClick="Login" />
+         <label>File Name</label>
+         <asp:TextBox ID="file_name" runat="server" Width="150px"></asp:TextBox>
 
-                <asp:Label 
-                    ID="errorLabel" 
-                    runat="server" 
-                    CssClass="error" 
-                    Visible="false">
-                </asp:Label>
-
-            </div>
-
-        </div>
-
+         <asp:Button ID="btnSubmitLeave" runat="server" Text="Submit Leave" CssClass="btn" OnClick="Submit_unpaid" />
+         <br />
+         <asp:Label ID="mssg" runat="server" Visible="false"></asp:Label>
+     </div>
+ </div>
     </form>
-
 </body>
 </html>

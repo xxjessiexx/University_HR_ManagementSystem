@@ -62,7 +62,7 @@
          <asp:TextBox ID="comp_date" runat="server" TextMode="Date"></asp:TextBox>
 
          <label>Reason</label>
-         <asp:TextBox ID="reason" runat="server" TextMode="Date"></asp:TextBox>
+         <asp:TextBox ID="reason" runat="server"></asp:TextBox>
 
          <label>Date of Original Workday</label>
          <asp:TextBox ID="original_date" runat="server" TextMode="Date" Width="150px"></asp:TextBox>

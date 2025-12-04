@@ -28,7 +28,7 @@
     <li><a href="MyPayroll.aspx">Payroll</a></li>
     <li><a href="MyPerformance.aspx">Performance</a></li>
 
-    <li>
+    <li >
         <a href="#" class="nav-btn">Leaves ▾</a>
         <div class="dropdown-panel">
             <a href="SubmitAnnualLeave.aspx">Submit Annual Leave</a>

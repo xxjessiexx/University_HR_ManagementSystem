@@ -74,6 +74,7 @@
     <Content Include="MyDeductions.aspx" />
     <Content Include="MyPayroll.aspx" />
     <Content Include="MyPerformance.aspx" />
+    <Content Include="Sql_Scripts\Final_SQL_Code.sql" />
     <Content Include="SubmitAnnualLeave.aspx" />
     <Content Include="Web.config" />
   </ItemGroup>
@@ -146,6 +147,7 @@
       <DependentUpon>Web.config</DependentUpon>
     </None>
   </ItemGroup>
+  <ItemGroup />
   <PropertyGroup>
     <VisualStudioVersion Condition="'$(VisualStudioVersion)' == ''">10.0</VisualStudioVersion>
     <VSToolsPath Condition="'$(VSToolsPath)' == ''">$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)</VSToolsPath>

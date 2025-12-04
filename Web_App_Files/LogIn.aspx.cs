@@ -42,9 +42,11 @@ namespace HR
             {
                 using (SqlConnection conn = new SqlConnection(connStr))
                 using (SqlCommand cmd = new SqlCommand("SELECT dbo.EmployeeLoginValidation(@employee_ID, @password)", conn))
+               
                 {
                     cmd.Parameters.AddWithValue("@employee_ID", id);
                     cmd.Parameters.AddWithValue("@password", pass);
+                   
 
                     conn.Open();
                     object result = cmd.ExecuteScalar();
@@ -60,8 +62,29 @@ namespace HR
                     }
                     else
                     {
-                        errorLabel.Text = "Invalid ID or password, Please try again.";
-                        errorLabel.Visible = true;
+                        using (SqlCommand cmd2 = new SqlCommand("SELECT dbo.HRLoginValidation(@id, @pass)", conn))
+                        {
+                            cmd2.Parameters.AddWithValue("@id", id);
+                            cmd2.Parameters.AddWithValue("@pass", pass);
+
+                            conn.Open();
+                            result = cmd2.ExecuteScalar();
+                            conn.Close();
+                            bool isValidHr = (result != null && Convert.ToInt32(result) == 1);
+                            if (isValidHr)
+                            {
+                                Session["HRID"] = id;
+                                Session["Role"] = "HR";
+                                Response.Redirect("HRHome.aspx");
+
+                            }
+                            else
+                            {
+                                errorLabel.Text = "Invalid ID or password, Please try again.";
+                                errorLabel.Visible = true;
+                            }
+
+                        }
                     }
                 }
             }

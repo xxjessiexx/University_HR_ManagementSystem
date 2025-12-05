@@ -67,28 +67,86 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Content Include="AddHoliday.aspx" />
+    <Content Include="AdminHome.aspx" />
+    <Content Include="AdminLogin.aspx" />
+    <Content Include="Attendance Yesterday.aspx" />
+    <Content Include="employee per dep.aspx" />
     <Content Include="EmployeeHome.aspx" />
+    <Content Include="Employees_Details.aspx" />
     <Content Include="HRApproval.aspx" />
     <Content Include="HRDeductions.aspx" />
     <Content Include="HRHome.aspx" />
     <Content Include="HRPayroll.aspx" />
+    <Content Include="InitiateAttendance.aspx" />
     <Content Include="LeaveStatus.aspx" />
     <Content Include="LogIn.aspx" />
     <Content Include="MyAttendance.aspx" />
     <Content Include="MyDeductions.aspx" />
     <Content Include="MyPayroll.aspx" />
     <Content Include="MyPerformance.aspx" />
+    <Content Include="PerformanceWinter.aspx" />
+    <Content Include="RejectedMedicals.aspx" />
+    <Content Include="RemoveApprovedLeavesAttendance.aspx" />
+    <Content Include="RemoveDayOffAttendance.aspx" />
+    <Content Include="RemoveHolidayAttendance.aspx" />
+    <Content Include="Remove_Deduction_resigned.aspx" />
+    <Content Include="ReplaceEmployee.aspx" />
     <Content Include="Sql_Scripts\Final_SQL_Code.sql" />
     <Content Include="SubmitAnnualLeave.aspx" />
+    <Content Include="UpdateAttendance.aspx" />
+    <Content Include="UpdateStatus.aspx" />
     <Content Include="Web.config" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="AddHoliday.aspx.cs">
+      <DependentUpon>AddHoliday.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="AddHoliday.aspx.designer.cs">
+      <DependentUpon>AddHoliday.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="AdminHome.aspx.cs">
+      <DependentUpon>AdminHome.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="AdminHome.aspx.designer.cs">
+      <DependentUpon>AdminHome.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="AdminLogin.aspx.cs">
+      <DependentUpon>AdminLogin.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="AdminLogin.aspx.designer.cs">
+      <DependentUpon>AdminLogin.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="Attendance Yesterday.aspx.cs">
+      <DependentUpon>Attendance Yesterday.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="Attendance Yesterday.aspx.designer.cs">
+      <DependentUpon>Attendance Yesterday.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="employee per dep.aspx.cs">
+      <DependentUpon>employee per dep.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="employee per dep.aspx.designer.cs">
+      <DependentUpon>employee per dep.aspx</DependentUpon>
+    </Compile>
     <Compile Include="EmployeeHome.aspx.cs">
       <DependentUpon>EmployeeHome.aspx</DependentUpon>
       <SubType>ASPXCodeBehind</SubType>
     </Compile>
     <Compile Include="EmployeeHome.aspx.designer.cs">
       <DependentUpon>EmployeeHome.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="Employees_Details.aspx.cs">
+      <DependentUpon>Employees_Details.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="Employees_Details.aspx.designer.cs">
+      <DependentUpon>Employees_Details.aspx</DependentUpon>
     </Compile>
     <Compile Include="HRApproval.aspx.cs">
       <DependentUpon>HRApproval.aspx</DependentUpon>
@@ -117,6 +175,13 @@
     </Compile>
     <Compile Include="HRPayroll.aspx.designer.cs">
       <DependentUpon>HRPayroll.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="InitiateAttendance.aspx.cs">
+      <DependentUpon>InitiateAttendance.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="InitiateAttendance.aspx.designer.cs">
+      <DependentUpon>InitiateAttendance.aspx</DependentUpon>
     </Compile>
     <Compile Include="LeaveStatus.aspx.cs">
       <DependentUpon>LeaveStatus.aspx</DependentUpon>
@@ -160,13 +225,76 @@
     <Compile Include="MyPerformance.aspx.designer.cs">
       <DependentUpon>MyPerformance.aspx</DependentUpon>
     </Compile>
+    <Compile Include="PerformanceWinter.aspx.cs">
+      <DependentUpon>PerformanceWinter.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="PerformanceWinter.aspx.designer.cs">
+      <DependentUpon>PerformanceWinter.aspx</DependentUpon>
+    </Compile>
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="RejectedMedicals.aspx.cs">
+      <DependentUpon>RejectedMedicals.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="RejectedMedicals.aspx.designer.cs">
+      <DependentUpon>RejectedMedicals.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="RemoveApprovedLeavesAttendance.aspx.cs">
+      <DependentUpon>RemoveApprovedLeavesAttendance.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="RemoveApprovedLeavesAttendance.aspx.designer.cs">
+      <DependentUpon>RemoveApprovedLeavesAttendance.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="RemoveDayOffAttendance.aspx.cs">
+      <DependentUpon>RemoveDayOffAttendance.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="RemoveDayOffAttendance.aspx.designer.cs">
+      <DependentUpon>RemoveDayOffAttendance.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="RemoveHolidayAttendance.aspx.cs">
+      <DependentUpon>RemoveHolidayAttendance.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="RemoveHolidayAttendance.aspx.designer.cs">
+      <DependentUpon>RemoveHolidayAttendance.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="Remove_Deduction_resigned.aspx.cs">
+      <DependentUpon>Remove_Deduction_resigned.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="Remove_Deduction_resigned.aspx.designer.cs">
+      <DependentUpon>Remove_Deduction_resigned.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="ReplaceEmployee.aspx.cs">
+      <DependentUpon>ReplaceEmployee.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="ReplaceEmployee.aspx.designer.cs">
+      <DependentUpon>ReplaceEmployee.aspx</DependentUpon>
+    </Compile>
     <Compile Include="SubmitAnnualLeave.aspx.cs">
       <DependentUpon>SubmitAnnualLeave.aspx</DependentUpon>
       <SubType>ASPXCodeBehind</SubType>
     </Compile>
     <Compile Include="SubmitAnnualLeave.aspx.designer.cs">
       <DependentUpon>SubmitAnnualLeave.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="UpdateAttendance.aspx.cs">
+      <DependentUpon>UpdateAttendance.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="UpdateAttendance.aspx.designer.cs">
+      <DependentUpon>UpdateAttendance.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="UpdateStatus.aspx.cs">
+      <DependentUpon>UpdateStatus.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="UpdateStatus.aspx.designer.cs">
+      <DependentUpon>UpdateStatus.aspx</DependentUpon>
     </Compile>
   </ItemGroup>
   <ItemGroup>
